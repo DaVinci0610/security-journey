@@ -35,7 +35,7 @@ protocols like TCP and UDP later on.
 ## Approach
 
 I captured an ICMP packet on **Kali Linux** using **Wireshark** and fully
-dissected it – analyzing and documenting every single value.
+dissected it – analyzing and documenting every single and possible value.
 
 ---
 
