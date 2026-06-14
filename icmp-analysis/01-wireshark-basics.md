@@ -105,3 +105,15 @@ Area 1 is divided into 7 columns, which can be broken down quickly:
 7. **Info** — A brief summary of the packet's content, providing a quick overview of what the packet contains without having to inspect it in detail.
 
 ![alt text](image-6.png)
+
+Area 2 and 3 are more closely connected when it comes to gathering information. While Area 3 displays the packet as hexadecimal code, Area 2 allows us to understand how that code is structured and what information can be read from it.
+
+In Area 2 we can expect four tabs: the "Frame" tab, which tells us the number of the packet since the start of the capture. This makes it easier to find and match related packets such as a Request and its corresponding Reply. This tab also highlights the complete hexadecimal code in Area 3.
+
+The next tab is "Ethernet II", which covers the first 14 bytes and contains information about the sender, the receiver, and the protocol type that follows this header.
+
+The "Internet Protocol (IP)" tab covers the next 20 bytes (15–34) and contains information about how the packet is transmitted across the network.
+
+Finally, the "ICMP" tab covers the last 8 bytes (35–42) and contains the actual request information of the packet, including type, code, checksum, identifier and sequence number.
+
+![alt text](image-7.png)
