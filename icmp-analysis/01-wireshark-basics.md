@@ -161,5 +161,128 @@ ping -c 1 8.8.8.8
 > 💡 **Note:** `8.8.8.8` is Google's **public DNS server**. An alternative is `1.1.1.1` by Cloudflare, which is also commonly used for connectivity tests.
 
 
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+![alt text](image-10.png)
+
+
+We enter the command in the Linux terminal and after pressing enter, it won't take long — within seconds, **2 packets** should appear and fill our **areas in Wireshark**.
+
+
+Even without Wireshark, the terminal already gives us some useful information after running the ping command:
+
+```
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=40.7 ms
+```
+
+| Field | Value | Meaning |
+|-------|-------|---------|
+| `56(84) bytes` | 56 / 84 bytes | The size of the data being sent – 56 bytes of payload, 84 bytes total including the ICMP header |
+| `icmp_seq=1` | 1 | ICMP Sequence Number – this is the 1st packet sent. If multiple packets are sent, this number increases (1, 2, 3...). It helps identify lost or out-of-order packets |
+| `ttl=118` | 118 | Time to Live – every packet starts with a TTL value and loses 1 for each router (hop) it passes through. When TTL reaches 0, the packet is discarded. Windows starts at **128**, Linux starts at **64**. Since we received a TTL of 118, Google's server likely started at **128**, meaning the packet passed through **10 hops** to reach us |
+| `time=40.7 ms` | 40.7 ms | The round-trip time – how long it took for the packet to travel from our machine to 8.8.8.8 and back |
+
+---
+
+```
+--- 8.8.8.8 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 40.668/40.668/40.668/0.000 ms
+```
+
+| Field | Meaning |
+|-------|---------|
+| `1 packets transmitted, 1 received` | We sent 1 packet and received 1 reply – no packet was lost |
+| `0% packet loss` | The connection is stable – all packets arrived successfully |
+| `rtt min/avg/max/mdev` | Round-trip time statistics: minimum / average / maximum / deviation. Since we only sent 1 packet, all values are identical at **40.668 ms** |
+
+> 💡 **Note:** Make sure Wireshark is already **capturing on the correct interface** before running the ping command, otherwise the packets might not be recorded.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
 ![alt text](image-8.png)
 
+
+We can now see our 3 familiar areas again — this time filled with data.
+
+In **Area 1**, after our preparation, only the **Info column** should still raise some questions, which I'd like to address directly.
+
+![alt text](image-12.png)
+
+---
+
+### Breaking Down the Info Column
+
+At the very beginning, the **ICMP type** is declared:
+- **Request** – I am asking / sending a packet out
+- **Reply** – The answer comes back
+
+---
+
+| Field | Meaning |
+|-------|---------|
+| `id=0x3bf5` | The **ICMP Identifier** — used to match a Request with its corresponding Reply. When multiple ping processes run simultaneously, the ID helps distinguish which reply belongs to which request. `0x3bf5` is the hexadecimal representation of **15349** in decimal — this value is randomly assigned by the operating system for each new ping session |
+| `seq=1/256` | **1** = our packet sequence number (the 1st packet sent). **256** = the raw **Big-Endian** representation of 1 in a 16-bit format. This pattern continues: 2/512, 3/768, etc. I will go deeper into this type of number representation once we break down the packet details — it is also **relevant for attack detection**, as manipulated or unexpected sequence values can indicate **ICMP-based attacks such as ping floods or crafted packets** |
+| `ttl=64` | **Time to Live** of our outgoing Request packet — since our machine runs Linux, it starts at **64** (as discussed earlier in the terminal output) |
+| `ttl=118` | **Time to Live** of the incoming Reply from 8.8.8.8 — Google's server started at **128**, and the packet passed through **10 hops** to reach us |
+| `(reply in 19)` | A Wireshark reference — the corresponding **Reply packet** can be found in **row 19** of the packet list |
+| `(request in 17)` | A Wireshark reference — the corresponding **Request packet** can be found in **row 17** of the packet list |
+
+> 💡 **Note:** These Wireshark row references are extremely useful when analyzing traffic — they allow you to instantly jump between a request and its reply, making it easy to verify response times and confirm that no packets were lost.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+After breaking down Area 1 in detail, the next interesting source of information is hidden in the **interaction between Area 2 and Area 3**.
+
+
+![alt text](image-14.png)
+
+
+---
+
+### Area 3 — The Raw Packet
+
+Area 3 caught my personal interest the most — here we are one step closer to the raw message, almost exactly as the device itself receives it. It is displayed in **hexadecimal**, though the actual transmission happens in **binary**.
+
+In my opinion, professional and effective troubleshooting goes far beyond simply reading error codes. Complex issues demand the **deepest possible understanding of the underlying subject** — in this case, data packets and transmission protocols. Only with this level of knowledge can the true **root cause** of an error or an attack be reliably identified and fully resolved, rather than just partially patched.
+
+> 💡 **Why hex and not binary?**
+> Binary data is extremely long and hard to read for humans. Hexadecimal is a compact representation — every **1 byte** (8 bits) can be expressed as exactly **2 hex characters**, making it much easier to read and analyze while still being close to the raw data.
+
+---
+
+### Area 2 — The Translator
+
+Area 2 acts as a **translator** between the human-readable labels and the raw hex data.
+
+When you **hover over any field** in Area 2 — such as one of the headers we already discussed — the corresponding bytes in the hex code on the right side are **highlighted**, showing you exactly which part of the raw packet contains that specific information.
+
+In the screenshot, I am hovering over **Frame 17** — and as we can already derive from our preparation, the **entire hex code is highlighted**, since the Frame layer represents the complete packet from start to finish.
+
+> 💡 **Note:** This highlight feature is one of Wireshark's most powerful tools for learning and analysis — it creates a direct visual link between a protocol field and its raw bytes, making it possible to understand exactly how data is structured at the byte level.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+![alt text](image-15.png)
+
+
+To not leave the elephant in the room unaddressed, we need to briefly talk about the ASCII representation displayed alongside the hex code in Area 3.
+
+ASCII — The Human-Readable Side
+When Wireshark displays the raw packet data, it shows two columns side by side:
+
+Column	What it shows
+Hex	The raw bytes in hexadecimal — precise and complete
+ASCII	A human-readable interpretation of those same bytes — where possible
+ASCII (American Standard Code for Information Interchange) is a character encoding standard that maps numbers to characters. For example, the hex value 0x41 represents the letter A, 0x48 represents H, and so on.
+
+However — in an ICMP packet, most of the data is not text. The payload of a ping packet contains a pattern of bytes (on Linux, typically the alphabet abcdefghijklmnopqrstuvwxyz...) which can be partially read as ASCII. Everything else — headers, flags, checksums — will appear as dots (.) in the ASCII column, meaning those bytes have no printable ASCII representation.
+
+💡 Why does this matter?
+In more advanced analysis — for example when inspecting HTTP, FTP or Telnet traffic — the ASCII column becomes extremely powerful, as those protocols transmit data in plain text. You can literally read usernames, passwords or web requests directly in Wireshark. This is also one of the key reasons why unencrypted protocols are considered a serious security risk.
