@@ -63,13 +63,20 @@ Since I am running this project on Kali Linux, I will note and break down every 
 To launch Wireshark, we open our terminal (Ctrl+Alt+T) and enter:
 sudo wireshark, where "sudo" stands for "superuser do" and thus acts as the master key to execute any command on this machine (Note: The host's password will be prompted).
 
+
 ![alt text](image-1.png)
+
 
 After successfully entering your password, the following start page of the Wireshark program opens. As expected, a large number of tabs, information, and configurations are immediately visible at first glance.
 
-In order not to get lost in this forest of information, I have highlighted the filter tab in the following screenshot — which, even before launching the program, seemed to me the obvious first thing to look for, since I only want to work out a specific type of information for myself here: ICMP.
 
 ![alt text](image-2.png)
+
+
+In order not to get lost in this forest of information, I have highlighted the filter tab — which, even before launching the program, seemed to me the obvious first thing to look for, since I only want to work out a specific type of information for myself here: ICMP.
+
+
+![alt text](image-4.png)
 
 
 We already get a sense that our input is valid, as the input field turns green after we have entered the protocol we exclusively want to capture. This saves us an enormous amount of stress and sorting effort.
@@ -79,16 +86,21 @@ I personally find such background noise as a beginner to be very overwhelming, a
 
 With that, our settings for capturing our packet are ideally configured and Wireshark now knows what we want displayed and what we don't. By clicking on the red arrow button, Wireshark begins capturing packets.
 
-![alt text](image-4.png)
 
 
 Once the packet capture begins, we are immediately brought to an empty window. This is where the first advantage of our pre-set filter becomes apparent — as long as we do not send (or receive) an ICMP request, these windows remain empty, allowing us to calmly prepare for the information that awaits us — information that, upon arrival, will directly overwhelm us if we do not know what to expect and where.
 
 For this reason, I have divided this screen into 3 areas for easier explanation, which we must go through in detail before we can even send and receive our first packet!
 
+
 ![alt text](image-5.png)
 
+
 Area 1 is divided into 7 columns, which can be broken down quickly:
+
+![alt text](image-6.png)
+
+
 
 1. **No.** — Displays the frame number (e.g. *Frame 1, Frame 2, ...*), representing the order in which the packets arrived during the capture session.
 
@@ -104,11 +116,19 @@ Area 1 is divided into 7 columns, which can be broken down quickly:
 
 7. **Info** — A brief summary of the packet's content, providing a quick overview of what the packet contains without having to inspect it in detail.
 
-![alt text](image-6.png)
+
+------------------------------------------------------------------------------------------------------------------------------
+
 
 Area 2 and 3 are more closely connected when it comes to gathering information. While Area 3 displays the packet as hexadecimal code, Area 2 allows us to understand how that code is structured and what information can be read from it.
 
-In Area 2 we can expect four tabs: the "Frame" tab, which tells us the number of the packet since the start of the capture. This makes it easier to find and match related packets such as a Request and its corresponding Reply. This tab also highlights the complete hexadecimal code in Area 3.
+
+![alt text](image-7.png)
+
+
+In Area 2 we can expect four tabs: 
+
+the "Frame" tab, which tells us the number of the packet since the start of the capture. This makes it easier to find and match related packets such as a Request and its corresponding Reply. This tab also highlights the complete hexadecimal code in Area 3.
 
 The next tab is "Ethernet II", which covers the first 14 bytes and contains information about the sender, the receiver, and the protocol type that follows this header.
 
@@ -116,4 +136,30 @@ The "Internet Protocol (IP)" tab covers the next 20 bytes (15–34) and contains
 
 Finally, the "ICMP" tab covers the last 8 bytes (35–42) and contains the actual request information of the packet, including type, code, checksum, identifier and sequence number.
 
-![alt text](image-7.png)
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+Now we are prepared enough to fill these empty fields with new information and go through them. So let's send a command to capture both a **request packet** and a **reply packet** for a better overview.
+
+To reliably measure connection speed, a certain number of request packets is usually sent (**Linux: infinite until manually interrupted, Windows: 4 packets** by default). However, this is not necessary for our packet analysis, since we are less interested in the *content* of the packet and more in its **structure**.
+
+We also need to provide the command with a **destination IP address or URL**.
+
+Here is what the command looks like on Linux:
+
+```bash
+ping -c 1 8.8.8.8
+```
+
+| Part | Meaning |
+|------|---------|
+| `ping` | The command to send a request packet |
+| `-c 1` | Count 1 – how many packets should be sent |
+| `8.8.8.8` | Our target IP – Google's DNS server, commonly used to test connectivity as it is reliably reachable |
+
+> 💡 **Note:** `8.8.8.8` is Google's **public DNS server**. An alternative is `1.1.1.1` by Cloudflare, which is also commonly used for connectivity tests.
+
+
+![alt text](image-8.png)
+
