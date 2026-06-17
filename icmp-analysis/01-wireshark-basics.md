@@ -2,24 +2,15 @@
 
 ## Introduction
 
-In order to begin capturing ICMP packets and to be able to address 
-the information to be learned without any issues, it is necessary to 
-understand what information we expect from Wireshark.
+Before I could start capturing ICMP packets and working through everything I wanted to learn, I first needed to understand what kind of information to expect from Wireshark.
 
-This will not be a guide or breakdown of the Wireshark program or the 
-individual tabs of the interface. In this chapter, I offer the reader — 
-whether experienced or a beginner — my perspective on the first encounter 
-with this program.
+This is not a guide or breakdown of the Wireshark program or its individual tabs. In this chapter, I am simply sharing my perspective on the first encounter with this program.
 
 What information do I consider important?  
 What kind of information do I expect?  
 What can be derived from this information?
 
-Since there are already plenty of tutorials and explanatory videos about 
-this program available on the web, I do not wish to add to them, but rather 
-to simply and soberly build a basic understanding step by step through 
-practice, exercises, and above all curiosity — and to further develop and 
-expand upon it with each subsequent project.
+Since there are already plenty of tutorials and explanatory videos about this program available on the web, I did not want to add to them — but rather to build a basic understanding step by step through practice, exercises, and above all curiosity, and to further develop and expand upon it with each subsequent project.
 
 
 ## What is Wireshark?
@@ -40,95 +31,86 @@ and displays the raw data packets traveling through the network in real time.
 This makes it an extremely useful tool for:
 - Detecting cyberattacks early and defending against them
 - Investigating successful attacks after the fact
-- Preventing future attacks
-- Protecting your own machine
-- Helping both companies and individuals identify weak network structures 
-  or active threats
-- **Testing network topologies and infrastructures** — Wireshark allows you 
-  to verify whether a network is built and functioning correctly
 - **Diagnosing network issues** — it helps identify why and how packets 
   disappear (packet loss), take too long to arrive (high latency/delay), 
   or behave unexpectedly within a network
 
-> ⚠️ **Note:** Wireshark is in itself a complete topic that could easily 
+> **Note:** Wireshark is in itself a complete topic that could easily 
 > fill an entire project on its own. I am deliberately keeping this section 
-> brief — I am aware that I am leaving out a lot of information, but I am 
-> doing so intentionally in order to stay focused on the actual core of 
-> this project: **ICMP packet analysis.**
+> brief, as my focus here is on the actual core of this project: **ICMP packet analysis.**
 
 ## Starting Wireshark
 
-Since I am running this project on Kali Linux, I will note and break down every necessary terminal command.
+Since I am running this project on Kali Linux, I will note every necessary terminal command along the way.
 
-To launch Wireshark, we open our terminal (Ctrl+Alt+T) and enter:
-sudo wireshark, where "sudo" stands for "superuser do" and thus acts as the master key to execute any command on this machine (Note: The host's password will be prompted).
+To launch Wireshark, I opened my terminal (Ctrl+Alt+T) and entered:
+`sudo wireshark` — where "sudo" stands for "superuser do" and acts as the master key to execute any command on this machine (the host password will be prompted).
 
 
 ![alt text](image-1.png)
 
 
-After successfully entering your password, the following start page of the Wireshark program opens. As expected, a large number of tabs, information, and configurations are immediately visible at first glance.
+After entering my password, the Wireshark start page opened. As expected, a large number of tabs, information, and configurations were immediately visible at first glance.
 
 
 ![alt text](image-2.png)
 
 
-In order not to get lost in this forest of information, I have highlighted the filter tab — which, even before launching the program, seemed to me the obvious first thing to look for, since I only want to work out a specific type of information for myself here: ICMP.
+In order not to get lost in this forest of information, I highlighted the filter tab — which, even before launching the program, seemed to me the obvious first thing to look for, since I only wanted to work with one specific type of information: ICMP.
 
 
 ![alt text](image-4.png)
 
 
-We already get a sense that our input is valid, as the input field turns green after we have entered the protocol we exclusively want to capture. This saves us an enormous amount of stress and sorting effort.
+The input field turned green after I entered the protocol — a clear sign that the input was valid. This saves an enormous amount of stress and sorting effort.
 
-You will get an idea of what I mean if you have ever opened Wireshark while nothing else was active on the desktop — except for an internet connection!
-I personally find such background noise as a beginner to be very overwhelming, as you keep discovering more and more knowledge gaps and can quickly get lost in the sheer volume of data. For this reason, I have deliberately chosen for this project which information to include and which to leave out — since during my research I often had to set things aside the moment I noticed I was drifting too far from the main topic. With that I want to make it clear that I am not ignoring or hiding any information here, but rather taking everything into account and either incorporating it into the project, or categorizing it and setting it aside for future projects.
+You will get an idea of what I mean if you have ever opened Wireshark while nothing else was active on the desktop — except for an internet connection.
+I personally found such background noise as a beginner to be very overwhelming. You keep discovering more and more knowledge gaps and can quickly get lost in the sheer volume of data. For this reason, I deliberately chose which information to include and which to leave out — since during my research I often had to set things aside the moment I noticed I was drifting too far from the main topic. I want to make it clear that I am not ignoring or hiding any information here, but rather taking everything into account and either incorporating it into the project, or categorizing it and setting it aside for future projects.
 
-With that, our settings for capturing our packet are ideally configured and Wireshark now knows what we want displayed and what we don't. By clicking on the red arrow button, Wireshark begins capturing packets.
+With that, my settings for capturing the packet were configured and Wireshark knew what I wanted displayed. By clicking the red arrow button, Wireshark began capturing packets.
 
 
+Once the capture started, I was immediately met with an empty window. This is where the first advantage of the pre-set filter became apparent — as long as no ICMP request was sent or received, the window stayed empty, which gave me time to actually think about what I was about to see.
 
-Once the packet capture begins, we are immediately brought to an empty window. This is where the first advantage of our pre-set filter becomes apparent — as long as we do not send (or receive) an ICMP request, these windows remain empty, allowing us to calmly prepare for the information that awaits us — information that, upon arrival, will directly overwhelm us if we do not know what to expect and where.
-
-For this reason, I have divided this screen into 3 areas for easier explanation, which we must go through in detail before we can even send and receive our first packet!
+For this reason, I divided this screen into 3 areas, which I wanted to understand before sending anything.
 
 
 ![alt text](image-5.png)
 
 
-Area 1 is divided into 7 columns, which can be broken down quickly:
+Area 1 is divided into 7 columns, which I broke down one by one:
 
 ![alt text](image-6.png)
 
 
 
-1. **No.** — Displays the frame number (e.g. *Frame 1, Frame 2, ...*), representing the order in which the packets arrived during the capture session.
+1. **No.** — The frame number (e.g. *Frame 1, Frame 2, ...*), representing the order in which the packets arrived during the capture session.
 
-2. **Time** — By default, this value shows the elapsed time in seconds since the capture was started. It can optionally be changed to Unix Epoch Time (seconds counted since January 1st, 1970) via *View → Time Display Format → Unix Epoch*.
+2. **Time** — By default, this shows the elapsed time in seconds since the capture was started. It can optionally be changed to Unix Epoch Time (seconds counted since January 1st, 1970) via *View → Time Display Format → Unix Epoch*.
 
-3. **Source** — The source IP address, meaning the IP address of the sender of the packet.
+3. **Source** — The source IP address — the IP address of the sender.
 
-4. **Destination** — The destination IP address of the packet, indicating where it is being sent to.
+4. **Destination** — The destination IP address — where the packet is being sent to.
 
 5. **Protocol** — The protocol in which the packet was composed (e.g. ICMP, TCP, UDP).
 
 6. **Length** — The total length of the packet, measured in bytes.
 
-7. **Info** — A brief summary of the packet's content, providing a quick overview of what the packet contains without having to inspect it in detail.
+7. **Info** — A brief summary of the packet's content, providing a quick overview without having to inspect it in detail.
 
 
 ------------------------------------------------------------------------------------------------------------------------------
 
 
-Area 2 and 3 are more closely connected when it comes to gathering information. While Area 3 displays the packet as hexadecimal code, Area 2 allows us to understand how that code is structured and what information can be read from it.
+Area 2 and 3 are more closely connected when it comes to gathering information. While Area 3 displays the packet as hexadecimal code, Area 2 helped me understand how that code is structured and what information can be read from it.
 
 
 ![alt text](image-7.png)
 
 
-In Area 2 we can expect four tabs: 
+In Area 2 I found four tabs:
 
-the "Frame" tab, which tells us the number of the packet since the start of the capture. This makes it easier to find and match related packets such as a Request and its corresponding Reply. This tab also highlights the complete hexadecimal code in Area 3.
+The "Frame" tab, which shows the number of the packet since the start of the capture. This makes it easier to find and match related packets such as a Request and its corresponding Reply. This tab also highlights the complete hexadecimal code in Area 3.
 
 The next tab is "Ethernet II", which covers the first 14 bytes and contains information about the sender, the receiver, and the protocol type that follows this header.
 
@@ -140,13 +122,11 @@ Finally, the "ICMP" tab covers the last 8 bytes (35–42) and contains the actua
 ------------------------------------------------------------------------------------------------------------------------------
 
 
-Now we are prepared enough to fill these empty fields with new information and go through them. So let's send a command to capture both a **request packet** and a **reply packet** for a better overview.
+At this point I felt prepared enough to actually send something and fill these empty fields with real data — so I ran a command to capture both a **request packet** and a **reply packet** for a better overview.
 
-To reliably measure connection speed, a certain number of request packets is usually sent (**Linux: infinite until manually interrupted, Windows: 4 packets** by default). However, this is not necessary for our packet analysis, since we are less interested in the *content* of the packet and more in its **structure**.
+To reliably measure connection speed, a certain number of request packets is usually sent (**Linux: infinite until manually interrupted, Windows: 4 packets** by default). However, this was not necessary for my packet analysis, since I was less interested in the *content* of the packet and more in its **structure**.
 
-We also need to provide the command with a **destination IP address or URL**.
-
-Here is what the command looks like on Linux:
+The command also needs a **destination IP address or URL**. On Linux it looks like this:
 
 ```bash
 ping -c 1 8.8.8.8
@@ -156,9 +136,9 @@ ping -c 1 8.8.8.8
 |------|---------|
 | `ping` | The command to send a request packet |
 | `-c 1` | Count 1 – how many packets should be sent |
-| `8.8.8.8` | Our target IP – Google's DNS server, commonly used to test connectivity as it is reliably reachable |
+| `8.8.8.8` | My target IP – Google's DNS server, commonly used to test connectivity as it is reliably reachable |
 
-> 💡 **Note:** `8.8.8.8` is Google's **public DNS server**. An alternative is `1.1.1.1` by Cloudflare, which is also commonly used for connectivity tests.
+> **Note:** `8.8.8.8` is Google's **public DNS server**. An alternative is `1.1.1.1` by Cloudflare, which is also commonly used for connectivity tests.
 
 
 
@@ -170,10 +150,10 @@ ping -c 1 8.8.8.8
 ![alt text](image-10.png)
 
 
-We enter the command in the Linux terminal and after pressing enter, it won't take long — within seconds, **2 packets** should appear and fill our **areas in Wireshark**.
+I entered the command in the terminal and within seconds, **2 packets** appeared in Wireshark.
 
 
-Even without Wireshark, the terminal already gives us some useful information after running the ping command:
+Even without Wireshark, the terminal already gave me some useful information after running the ping command:
 
 ```
 PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
@@ -184,8 +164,8 @@ PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
 |-------|-------|---------|
 | `56(84) bytes` | 56 / 84 bytes | The size of the data being sent – 56 bytes of payload, 84 bytes total including the ICMP header |
 | `icmp_seq=1` | 1 | ICMP Sequence Number – this is the 1st packet sent. If multiple packets are sent, this number increases (1, 2, 3...). It helps identify lost or out-of-order packets |
-| `ttl=118` | 118 | Time to Live – every packet starts with a TTL value and loses 1 for each router (hop) it passes through. When TTL reaches 0, the packet is discarded. Windows starts at **128**, Linux starts at **64**. Since we received a TTL of 118, Google's server likely started at **128**, meaning the packet passed through **10 hops** to reach us |
-| `time=40.7 ms` | 40.7 ms | The round-trip time – how long it took for the packet to travel from our machine to 8.8.8.8 and back |
+| `ttl=118` | 118 | Time to Live – every packet starts with a TTL value and loses 1 for each router (hop) it passes through. When TTL reaches 0, the packet is discarded. Windows starts at **128**, Linux starts at **64**. Since I received a TTL of 118, Google's server likely started at **128**, meaning the packet passed through **10 hops** to reach me |
+| `time=40.7 ms` | 40.7 ms | The round-trip time – how long it took for the packet to travel from my machine to 8.8.8.8 and back |
 
 ---
 
@@ -197,11 +177,11 @@ rtt min/avg/max/mdev = 40.668/40.668/40.668/0.000 ms
 
 | Field | Meaning |
 |-------|---------|
-| `1 packets transmitted, 1 received` | We sent 1 packet and received 1 reply – no packet was lost |
-| `0% packet loss` | The connection is stable – all packets arrived successfully |
-| `rtt min/avg/max/mdev` | Round-trip time statistics: minimum / average / maximum / deviation. Since we only sent 1 packet, all values are identical at **40.668 ms** |
+| `1 packets transmitted, 1 received` | I sent 1 packet and received 1 reply – no packet was lost |
+| `0% packet loss` | The connection was stable – all packets arrived successfully |
+| `rtt min/avg/max/mdev` | Round-trip time statistics: minimum / average / maximum / deviation. Since I only sent 1 packet, all values are identical at **40.668 ms** |
 
-> 💡 **Note:** Make sure Wireshark is already **capturing on the correct interface** before running the ping command, otherwise the packets might not be recorded.
+> **Note:** Worth noting — I made sure Wireshark was already capturing on the correct interface before running the ping command, otherwise the packets would not have been recorded.
 
 ------------------------------------------------------------------------------------------------------------------------------
 
@@ -209,9 +189,9 @@ rtt min/avg/max/mdev = 40.668/40.668/40.668/0.000 ms
 ![alt text](image-8.png)
 
 
-We can now see our 3 familiar areas again — this time filled with data.
+I could now see my 3 familiar areas — this time filled with data.
 
-In **Area 1**, after our preparation, only the **Info column** should still raise some questions, which I'd like to address directly.
+In **Area 1**, after all the preparation, only the **Info column** still raised some questions, which I wanted to address directly.
 
 ![alt text](image-12.png)
 
@@ -228,17 +208,17 @@ At the very beginning, the **ICMP type** is declared:
 | Field | Meaning |
 |-------|---------|
 | `id=0x3bf5` | The **ICMP Identifier** — used to match a Request with its corresponding Reply. When multiple ping processes run simultaneously, the ID helps distinguish which reply belongs to which request. `0x3bf5` is the hexadecimal representation of **15349** in decimal — this value is randomly assigned by the operating system for each new ping session |
-| `seq=1/256` | **1** = our packet sequence number (the 1st packet sent). **256** = the raw **Big-Endian** representation of 1 in a 16-bit format. This pattern continues: 2/512, 3/768, etc. I will go deeper into this type of number representation once we break down the packet details — it is also **relevant for attack detection**, as manipulated or unexpected sequence values can indicate **ICMP-based attacks such as ping floods or crafted packets** |
-| `ttl=64` | **Time to Live** of our outgoing Request packet — since our machine runs Linux, it starts at **64** (as discussed earlier in the terminal output) |
-| `ttl=118` | **Time to Live** of the incoming Reply from 8.8.8.8 — Google's server started at **128**, and the packet passed through **10 hops** to reach us |
+| `seq=1/256` | **1** = my packet sequence number (the 1st packet sent). **256** = the raw **Big-Endian** representation of 1 in a 16-bit format. This pattern continues: 2/512, 3/768, etc. I went deeper into this in the byte breakdown below — it is also **relevant for attack detection**, as manipulated or unexpected sequence values can indicate **ICMP-based attacks such as ping floods or crafted packets** |
+| `ttl=64` | **Time to Live** of my outgoing Request packet — since my machine runs Linux, it starts at **64** (as discussed earlier in the terminal output) |
+| `ttl=118` | **Time to Live** of the incoming Reply from 8.8.8.8 — Google's server started at **128**, and the packet passed through **10 hops** to reach me |
 | `(reply in 19)` | A Wireshark reference — the corresponding **Reply packet** can be found in **row 19** of the packet list |
 | `(request in 17)` | A Wireshark reference — the corresponding **Request packet** can be found in **row 17** of the packet list |
 
-> 💡 **Note:** These Wireshark row references are extremely useful when analyzing traffic — they allow you to instantly jump between a request and its reply, making it easy to verify response times and confirm that no packets were lost.
+> **Note:** I found these references particularly useful — clicking them jumps directly between a request and its reply, making it easy to verify response times and confirm that no packets were lost.
 
 ------------------------------------------------------------------------------------------------------------------------------
 
-After breaking down Area 1 in detail, the next interesting source of information is hidden in the **interaction between Area 2 and Area 3**.
+After breaking down Area 1, the next interesting source of information was hidden in the **interaction between Area 2 and Area 3**.
 
 
 ![alt text](image-14.png)
@@ -248,12 +228,12 @@ After breaking down Area 1 in detail, the next interesting source of information
 
 ### Area 3 — The Raw Packet
 
-Area 3 caught my personal interest the most — here we are one step closer to the raw message, almost exactly as the device itself receives it. It is displayed in **hexadecimal**, though the actual transmission happens in **binary**.
+Area 3 caught my interest the most — here I was one step closer to the raw message, almost exactly as the device itself receives it. It is displayed in **hexadecimal**, though the actual transmission happens in **binary**.
 
 In my opinion, professional and effective troubleshooting goes far beyond simply reading error codes. Complex issues demand the **deepest possible understanding of the underlying subject** — in this case, data packets and transmission protocols. Only with this level of knowledge can the true **root cause** of an error or an attack be reliably identified and fully resolved, rather than just partially patched.
 
-> 💡 **Why hex and not binary?**
-> Binary data is extremely long and hard to read for humans. Hexadecimal is a compact representation — every **1 byte** (8 bits) can be expressed as exactly **2 hex characters**, making it much easier to read and analyze while still being close to the raw data.
+> **Why hex and not binary?**
+> Binary data is extremely long and hard to read. Hexadecimal is a compact representation — every **1 byte** (8 bits) can be expressed as exactly **2 hex characters**, making it much easier to read and analyze while still being close to the raw data.
 
 ---
 
@@ -261,28 +241,55 @@ In my opinion, professional and effective troubleshooting goes far beyond simply
 
 Area 2 acts as a **translator** between the human-readable labels and the raw hex data.
 
-When you **hover over any field** in Area 2 — such as one of the headers we already discussed — the corresponding bytes in the hex code on the right side are **highlighted**, showing you exactly which part of the raw packet contains that specific information.
+When I hovered over a field in Area 2 — such as one of the headers already discussed — the corresponding bytes in the hex code on the right side were **highlighted**, showing me exactly which part of the raw packet contained that specific information.
 
-In the screenshot, I am hovering over **Frame 17** — and as we can already derive from our preparation, the **entire hex code is highlighted**, since the Frame layer represents the complete packet from start to finish.
+In the screenshot, I am hovering over **Frame 17** — and as I already knew from the earlier breakdown, the **entire hex code is highlighted**, since the Frame layer represents the complete packet from start to finish.
 
-> 💡 **Note:** This highlight feature is one of Wireshark's most powerful tools for learning and analysis — it creates a direct visual link between a protocol field and its raw bytes, making it possible to understand exactly how data is structured at the byte level.
+> **Note:** This was one of the most useful things I discovered — hovering over any field immediately shows which bytes belong to it, creating a direct visual link between a protocol label and its raw data.
 
 ------------------------------------------------------------------------------------------------------------------------------
 
 ![alt text](image-15.png)
 
 
-To not leave the elephant in the room unaddressed, we need to briefly talk about the ASCII representation displayed alongside the hex code in Area 3.
+One thing I still needed to address was the ASCII representation displayed alongside the hex code in Area 3.
 
-ASCII — The Human-Readable Side
+### ASCII — The Human-Readable Side
+
 When Wireshark displays the raw packet data, it shows two columns side by side:
 
-Column	What it shows
-Hex	The raw bytes in hexadecimal — precise and complete
-ASCII	A human-readable interpretation of those same bytes — where possible
+| Column | What it shows |
+|--------|--------------|
+| Hex | The raw bytes in hexadecimal — precise and complete |
+| ASCII | A human-readable interpretation of those same bytes — where possible |
+
 ASCII (American Standard Code for Information Interchange) is a character encoding standard that maps numbers to characters. For example, the hex value 0x41 represents the letter A, 0x48 represents H, and so on.
 
-However — in an ICMP packet, most of the data is not text. The payload of a ping packet contains a pattern of bytes (on Linux, typically the alphabet abcdefghijklmnopqrstuvwxyz...) which can be partially read as ASCII. Everything else — headers, flags, checksums — will appear as dots (.) in the ASCII column, meaning those bytes have no printable ASCII representation.
+However — in an ICMP packet, most of the data is not text. The payload of a ping packet contains a pattern of bytes (on Linux, typically the alphabet abcdefghijklmnopqrstuvwxyz...) which can be partially read as ASCII. Everything else — headers, flags, checksums — appears as dots (.) in the ASCII column, meaning those bytes have no printable ASCII representation.
 
-💡 Why does this matter?
-In more advanced analysis — for example when inspecting HTTP, FTP or Telnet traffic — the ASCII column becomes extremely powerful, as those protocols transmit data in plain text. You can literally read usernames, passwords or web requests directly in Wireshark. This is also one of the key reasons why unencrypted protocols are considered a serious security risk.
+**Why does this matter?**  
+In more advanced analysis — for example when inspecting HTTP, FTP or Telnet traffic — the ASCII column becomes extremely powerful, as those protocols transmit data in plain text. Usernames, passwords, entire web requests — all readable directly in the capture. That realization alone made this section worth studying.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+I had already gone through the individual fields in Area 2 — now I wanted to go one step deeper and look at the bytes themselves: which information is stored where.
+
+
+### Why Break Down Individual Bytes?
+
+Understanding the byte-level structure of a packet is not just an academic exercise. It is the reason I am doing this — without knowing what the raw data actually looks like, I am only ever working with someone else's interpretation of it.
+
+Relying solely on automated tools is not enough — understanding what is actually happening at the byte level is a skill I want to build, because it is the only way to truly know what you are looking at.
+
+---
+
+Below I go through the complete structure of the captured ICMP packet **layer by layer**, exactly as Wireshark presents it in Area 2:
+
+| Layer | What it covers |
+|-------|---------------|
+| **Ethernet II** | Source & destination MAC addresses, EtherType |
+| **IPv4** | IP header — version, TTL, source & destination IP, checksum and more |
+| **ICMP** | Type, code, checksum, identifier, sequence number |
+| **Data** | The actual payload — the ping data bytes |
+
+> **Note:** Every single field in Area 2 has a fixed position and size in the raw byte stream. This is what makes network protocols **deterministic and reliable** — every device in the world reads the same bytes in the same order.
