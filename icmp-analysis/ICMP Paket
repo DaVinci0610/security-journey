@@ -134,3 +134,30 @@ Bytes 13–14 form the **conclusion of the Ethernet II header** and indicate whi
 | `0x0806`  | ARP          |
 | `0x86DD`  | IPv6         |
 | `0x8100`  | VLAN Tag (802.1Q) |
+
+
+
+
+## Wireshark Metadata – `[Stream Index: 0]`
+
+![alt text](image-23.png)
+
+At the end of this section the field `[Stream Index: 0]` appears, which cannot be mapped to any byte in the hex dump. Wireshark adds its own **metadata fields** for analysis purposes and marks them with **square brackets `[ ]`** to distinguish them from actual protocol fields.
+
+These fields exist **only inside Wireshark** – they are not part of the actual network traffic and therefore have **no corresponding bytes in the hex dump**.
+
+Related packets are grouped together into a **stream** (data flow), making it easier to follow and filter entire connections – for example a complete **TCP connection**.
+
+Streams are **numbered sequentially** starting at `0` – so `Stream Index: 0` simply means this packet belongs to the **first detected stream** in the capture.
+
+This can be used directly as a **Wireshark display filter**, e.g.:
+- `tcp.stream == 0` → shows only packets belonging to stream 0
+
+### Other Examples of Wireshark-generated Fields `[ ]`
+
+| Field | Meaning |
+|-------|---------|
+| `[Stream index: 5]` | Packet belongs to the 6th detected stream |
+| `[Conversation completeness: ...]` | Indicates whether the stream was captured completely |
+| `[Time since first frame in this TCP stream]` | Time elapsed since the first packet of this stream |
+| `[Reassembled PDU]` | Wireshark has reassembled multiple packets into a single message |
