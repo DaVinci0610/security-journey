@@ -1,0 +1,136 @@
+# ICMP Paket
+
+Having seen and understood what information Wireshark provides, it becomes easier to understand the structure of a data packet. In the previous data sheet, I broke down the dissector fields from the Packet Details pane (Area 2). This now serves as preparatory work to go one level deeper — examining the raw hex dump in Area 3 and identifying exactly which bytes carry which information, layer by layer (Ethernet → IPv4 → ICMP).
+
+I had already gone through the individual fields in Area 2 — now I wanted to go one step deeper and look at the bytes themselves: which information is stored where.
+
+
+### Why Break Down Individual Bytes?
+
+Understanding the byte-level structure of a packet is not just an academic exercise. It is the reason I am doing this — without knowing what the raw data actually looks like, I am only ever working with someone else's interpretation of it.
+
+Relying solely on automated tools is not enough — understanding what is actually happening at the byte level is a skill I want to build, because it is the only way to truly know what you are looking at.
+
+---
+
+Below I go through the complete structure of the captured ICMP packet **layer by layer**, exactly as Wireshark presents it in Area 2:
+
+| Layer | What it covers |
+|-------|---------------|
+| **Ethernet II** | Source & destination MAC addresses, EtherType |
+| **IPv4** | IP header — version, TTL, source & destination IP, checksum and more |
+| **ICMP** | Type, code, checksum, identifier, sequence number |
+| **Data** | The actual payload — the ping data bytes |
+
+> **Note:** Every single field in Area 2 has a fixed position and size in the raw byte stream. This is what makes network protocols **deterministic and reliable** — every device in the world reads the same bytes in the same order.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+### Ethernet II - Byte 1-14
+
+![alt text](image-16.png)
+
+Like the vast majority of modern IP networks, ICMP uses Ethernet II as its foundation for the first 14 bytes of the packet. As the successor to Ethernet I (1980), Ethernet II introduced the EtherType field — a 2-byte field located at bytes 13–14 — which tells the receiver which protocol is carried in the payload. 
+As an alternative framing standard, IEEE 802.3 is used in certain other contexts, where those same 2 bytes indicate the frame length instead of the protocol type.
+
+![alt text](image-17.png)
+
+
+*The first subordinate tab "Destination" of the Ethernet II section can be further subdivided as follows:*
+
+![alt text](image-19.png)
+
+
+---
+
+## Bytes 1–3: OUI *(Organizationally Unique Identifier)*
+- Assigned to manufacturers by the **IEEE**
+- Identifies the **manufacturer** of the network card
+- Makes up the **first half** of the 6-byte MAC address
+- Contains two control bits in the **first byte**:
+
+  - **Bit 1 = LG-Bit** *(Local/Global Bit)*
+    - `0` → **Globally unique** – assigned by the manufacturer, worldwide unique *(factory default)*
+    - `1` → **Locally administered** – manually set *(e.g. VMs, VPN, software-defined)*
+
+  - **Bit 0 = IG-Bit** *(Individual/Group Bit)*
+    - `0` → **Individual (Unicast)** – packet addressed to a single device
+    - `1` → **Group (Multicast/Broadcast)** – packet addressed to a group *(e.g. `FF:FF:FF:FF:FF:FF`)*
+
+### All LG/IG Combinations
+
+| LG | IG | Meaning | Example |
+|----|----|---------|---------|
+| `0` | `0` | Global + Unicast | Normal network card |
+| `0` | `1` | Global + Multicast | `01:00:5e:...` *(IPv4 Multicast)* |
+| `1` | `0` | Local + Unicast | VM network adapter, VPN |
+| `1` | `1` | Local + Multicast/Broadcast | `FF:FF:FF:FF:FF:FF` *(Broadcast is a special case of Multicast)* |
+
+> **Note:** The combination LG=1 / IG=1 is **not exclusively Broadcast** – any locally administered group address falls into this category. `FF:FF:FF:FF:FF:FF` is simply the most well-known example.
+
+
+---
+
+## Bytes 4–6: NIC Specific *(Network Interface Controller)*
+- Freely assigned by the **manufacturer** itself
+- Identifies the **individual device** within the manufacturer's product range
+- Also called **Extension Identifier** or **Device ID**
+- Together with the OUI, forms a **worldwide unique address per network card**
+- Uniqueness only guaranteed if the **LG-Bit = 0** (globally administered)
+
+---
+
+## Source MAC Address – Bytes 7–12
+
+![alt text](image-20.png)
+
+The structure is **identical** to the Destination MAC Address (Bytes 1–6):
+
+### Bytes 7–9: OUI *(Organizationally Unique Identifier)*
+
+![alt text](image-21.png)
+
+- Assigned to manufacturers by the **IEEE**
+- Identifies the **manufacturer** of the **sending** device's network card
+- Contains the same two control bits in the **first byte** (Byte 7):
+
+  - **Bit 1 = LG-Bit** *(Local/Global Bit)*
+    - `0` → **Globally unique** – assigned by the manufacturer, worldwide unique *(factory default)*
+    - `1` → **Locally administered** – manually set *(e.g. VMs, VPN, software-defined)*
+
+  - **Bit 0 = IG-Bit** *(Individual/Group Bit)*
+    - `0` → **Individual (Unicast)** – packet sent by a single device *(always the case for Source MAC)*
+    - `1` → **invalid** – a packet can only ever be sent by a single device, never by a group; discarded by most devices
+
+> **Note:** The **IG-Bit in the Source MAC is always `0`** according to the IEEE standard, since a packet is always sent by a single device. A value of `1` is technically invalid.
+
+### Bytes 10–12: NIC Specific *(Network Interface Controller)*
+- Freely assigned by the **manufacturer** itself
+- Identifies the **individual sending device** within the manufacturer's product range
+- Also called **Extension Identifier** or **Device ID**
+- Together with the OUI, forms a **worldwide unique address per network card**
+- Uniqueness only guaranteed if the **LG-Bit = 0** (globally administered)
+
+------------------------------------------------------------------------------------------------------------------------------
+
+### Bytes 13-14: EtherType
+
+![alt text](image-22.png)
+
+Bytes 13–14 form the **conclusion of the Ethernet II header** and indicate which protocol is encapsulated in the payload that follows.
+
+### Function
+- Tells the receiving device **which Layer-3 protocol** follows in the payload
+- The receiver uses this value to pass the frame to the **correct protocol handler** *(e.g. IP stack, ARP handler)*
+- Also distinguishes **Ethernet II** from **IEEE 802.3** frames:
+  - Value **≥ `0x0600`** → **Ethernet II** – value is an EtherType
+  - Value **≤ `0x05DC`** → **IEEE 802.3** – value is the **frame length** instead
+
+### Common EtherType Values
+
+| Hex Value | Protocol     |
+|-----------|--------------|
+| `0x0800`  | IPv4         |
+| `0x0806`  | ARP          |
+| `0x86DD`  | IPv6         |
+| `0x8100`  | VLAN Tag (802.1Q) |
