@@ -272,24 +272,4 @@ In more advanced analysis — for example when inspecting HTTP, FTP or Telnet tr
 
 ------------------------------------------------------------------------------------------------------------------------------
 
-I had already gone through the individual fields in Area 2 — now I wanted to go one step deeper and look at the bytes themselves: which information is stored where.
 
-
-### Why Break Down Individual Bytes?
-
-Understanding the byte-level structure of a packet is not just an academic exercise. It is the reason I am doing this — without knowing what the raw data actually looks like, I am only ever working with someone else's interpretation of it.
-
-Relying solely on automated tools is not enough — understanding what is actually happening at the byte level is a skill I want to build, because it is the only way to truly know what you are looking at.
-
----
-
-Below I go through the complete structure of the captured ICMP packet **layer by layer**, exactly as Wireshark presents it in Area 2:
-
-| Layer | What it covers |
-|-------|---------------|
-| **Ethernet II** | Source & destination MAC addresses, EtherType |
-| **IPv4** | IP header — version, TTL, source & destination IP, checksum and more |
-| **ICMP** | Type, code, checksum, identifier, sequence number |
-| **Data** | The actual payload — the ping data bytes |
-
-> **Note:** Every single field in Area 2 has a fixed position and size in the raw byte stream. This is what makes network protocols **deterministic and reliable** — every device in the world reads the same bytes in the same order.
