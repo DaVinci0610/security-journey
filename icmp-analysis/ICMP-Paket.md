@@ -386,8 +386,222 @@ The source IP address is present in **every** IPv4 packet – not just in reques
 
 ---
 
+### Byte 31-34: Destination IP
 These four bytes contain the **IP address of the intended recipient** – i.e. the device this packet is ultimately addressed to.
 
 ![alt text](image-34.png)
 
 > **Hop-to-hop vs. end-to-end:** The destination IP address also remains **unchanged** across all hops. Every router along the path reads this field to determine where to forward the packet next – but never modifies it. Only the destination MAC address in the Ethernet II header is updated at each hop to reflect the next device on the path.
+
+------------------------------------------------------------------------------------------------------------------------------
+
+## Internet Control Message Protocol - Byte 35-98
+
+With the Ethernet II header (14 bytes) and the IPv4 header (20 bytes) fully parsed, now the payload of the IPv4 packet – the ICMP message, starts at byte 35 of the Ethernet frame.
+
+![alt text](image-35.png)
+
+The ICMP section in this capture spans 64 bytes and is divided into two parts:
+
+- Bytes 35–42 form the 8-byte ICMP header, which identifies this message as an Echo Request (ping), carries a checksum to verify the integrity of the entire ICMP message, and contains two identifiers – a Process ID and a Sequence Number – that allow the sender to match each reply to its corresponding request.
+
+- Bytes 43–98 form the 56-byte payload, which contains a timestamp recording the exact moment the ping was sent, followed by padding bytes – a repeating sequence of arbitrary data used purely to fill the packet to its intended size.
+
+---
+
+### Byte 35: Type
+
+This single byte identifies the **type of ICMP message** – it tells the receiver what kind of message this is and how to interpret the rest of the ICMP section.
+
+> **In this capture:** The value is `8` → this is an **Echo Request**, commonly known as a **ping**.
+
+![alt text](image-36.png)
+
+The Type field is the primary identifier in every ICMP message. The most commonly encountered values are:
+
+| Type | Name | Direction | Description |
+|------|------|-----------|-------------|
+| `0`  | **Echo Reply** | ← receiver → sender | Response to a ping |
+| `8`  | **Echo Request** | → sender → receiver | The ping itself |
+| `3`  | **Destination Unreachable** | ← router → sender | Packet could not be delivered |
+| `11` | **Time Exceeded** | ← router → sender | TTL reached 0; used by traceroute |
+| `5`  | **Redirect** | ← router → sender | Router instructs sender to use a different route |
+
+> **Note:** Types `0` and `8` always appear as a pair – every Echo Request *(Type 8)* expects exactly one Echo Reply *(Type 0)* in return. The **Sequence Number** and **Identifier** fields in the ICMP header are used to match each reply to its corresponding request.
+
+---
+
+### Byte 36: Code
+
+This byte acts as a **subtype** of the Type field – it further specifies the meaning of the ICMP message where multiple variants exist for a given type.
+
+> **In this capture:** The value is `0` – which is the only valid code for an Echo Request. It simply means: *no further specification needed*.
+
+
+![alt text](image-37.png)
+
+The Code field only becomes meaningful for certain ICMP types. For Echo Request *(Type 8)* and Echo Reply *(Type 0)*, the Code is always `0`. The most relevant examples where Code carries real information are:
+
+**Type 3 – Destination Unreachable**
+
+| Code | Meaning |
+|------|---------|
+| `0`  | Net Unreachable – the destination network cannot be reached |
+| `1`  | Host Unreachable – the destination host cannot be reached |
+| `3`  | Port Unreachable – the destination port is not open |
+| `4`  | Fragmentation Needed – packet too large, but DF flag is set |
+
+**Type 11 – Time Exceeded**
+
+| Code | Meaning |
+|------|---------|
+| `0`  | TTL Exceeded in Transit – TTL reached 0 at a router *(used by traceroute)* |
+| `1`  | Fragment Reassembly Time Exceeded – fragments did not arrive in time |
+
+> **Summary:** Type and Code always work **together**. Type defines the category of the message; Code defines the specific reason within that category. For a simple ping, both are effectively just formalities – but in error scenarios, the Code field is what tells the sender *exactly* what went wrong.
+
+---
+
+### Byte 37-38: Checksum
+
+These two bytes contain the **checksum of the entire ICMP message** – covering both the ICMP header and its payload. The receiver recalculates the checksum upon arrival and compares it to this value. If they do not match, the packet is silently discarded.
+
+> **Important distinction from the IPv4 Header Checksum:** The IPv4 checksum only covers the IPv4 header itself. The ICMP checksum, by contrast, covers **everything** – the full ICMP header plus all payload bytes. This means any corruption anywhere in the ICMP message will be detected.
+
+![alt text](image-38.png)
+
+**Why** does Wireshark validate the ICMP checksum by default – but not the IPv4 checksum?
+
+The reason lies in **where** each checksum is calculated:
+
+- The **IPv4 checksum** is typically offloaded to the **network card** *(hardware)*. Wireshark captures the packet before it reaches the network card – at which point the checksum field has not yet been filled in. Validating it would always produce a false error, so Wireshark disables this check by default.
+
+- The **ICMP checksum** is calculated by the **operating system in software**, before the packet is handed to the network card. By the time Wireshark captures the packet, the ICMP checksum is already correctly set and can therefore be validated immediately.
+
+---
+
+### Byte 39-40: Identifier
+
+These two bytes contain a process identifier (PID) – a number assigned by the operating system to uniquely identify which ping process sent this request. When the Echo Reply arrives, the sender uses this value to match the reply to the correct process, especially when multiple ping processes are running simultaneously.
+
+![alt text](image-39.png)
+
+Wireshark displays this field **twice** – not because it occupies 4 bytes, but because the same 2 bytes can be read in two different byte orders:
+
+| Representation | Byte order | Bytes read as | Value in this capture |
+|----------------|-----------|---------------|-----------------------|
+| **BE** *(Big Endian)* | Most significant byte first | `0x73 0x35` | **29493** |
+| **LE** *(Little Endian)* | Least significant byte first | `0x35 0x73` | **13683** |
+
+> **Why both?** ICMP does not mandate a specific byte order for the Identifier field. Different operating systems write it differently:
+> - **Linux / macOS** use **Big Endian** *(Network Byte Order)* – the BE value is the actual PID
+> - **Windows** uses **Little Endian** *(Host Byte Order)* – the LE value is the actual PID
+>
+> Since Wireshark cannot determine which OS sent the packet, it displays both interpretations so the correct value is always visible regardless of platform.
+
+---
+
+### Byte 41-42: Sequence Number
+
+These two bytes contain the sequence number of this ping packet. The sequence number starts at 1 for the first Echo Request sent by a process and is incremented by 1 with every subsequent ping – regardless of whether a reply was received.
+
+![alt text](image-40.png)
+
+Like the Identifier, the Sequence Number is also displayed in both byte orders by Wireshark, for the same reason:
+
+| Representation | Value in this capture |
+|----------------|-----------------------|
+| **BE** *(Big Endian)* | **1** `(0x0001)` |
+| **LE** *(Little Endian)* | **256** `(0x0100)` |
+
+- The **Identifier** answers: *"Is this reply meant for my process?"*
+- The **Sequence Number** answers: *"Is this the reply to this specific packet?"*
+
+| Observation | Meaning |
+|-------------|---------|
+| Sequence numbers increment normally | Ping is running without issues |
+| A sequence number is **missing** in the replies | That packet was lost *(packet loss)* |
+| A sequence number appears **twice** | The packet was duplicated in the network |
+| Replies arrive **out of order** | Packets took different routes *(reordering)* |
+
+
+---
+
+### Byte 43-50: Timestamp
+
+Here starts the **Payload**:
+
+The primary purpose of the timestamp is to measure the **Round-Trip Time (RTT)** – the total time a packet takes to travel from the sender to the destination and back again.
+
+```
+Sender dispatches packet  →  timestamp is written into the payload
+Echo Reply arrives        →  current time − timestamp = RTT
+```
+
+> This is exactly the value that the `ping` command displays as `time=12.3 ms`.
+
+### Important Limitations
+
+| Limitation | Explanation |
+|------------|-------------|
+| **Only as accurate as the system clock** | The timestamp is generated by the OS – if the clock is not synchronised, the measurement may be inaccurate |
+| **No security mechanism** | The timestamp can be forged – it serves purely as a measurement tool, not as an authentication mechanism |
+| **OS-dependent behaviour** | **Linux/macOS** write a real timestamp here; **Windows** fills this field with a fixed padding pattern (`0x00` to `0x37`) instead |
+
+### Important Note
+
+> The timestamp is **not an official part of the ICMP standard** – it is part of the **payload**, which the `ping` program fills in itself. The ICMP standard only requires that the receiver returns the payload **unchanged**. What is actually written into it is entirely up to the operating system or the specific `ping` implementation.
+
+---
+
+
+### Byte 51-98:
+
+The remaining **48 bytes** of the ICMP payload contain nothing but **padding** – a simple, repeating sequence of bytes with no functional meaning. Their sole purpose is to bring the packet to its intended size.
+
+**The pattern in this capture**
+
+In this capture, the padding consists of a straightforward ascending sequence:
+
+```
+0x08 0x09 0x0a 0x0b ...  0x37
+```
+
+> This is a well-known pattern used by the Linux `ping` implementation. It starts immediately after the 8-byte timestamp and increments by 1 with each byte until the packet reaches its target size.
+
+**Why is padding needed?**
+
+By default, `ping` on Linux sends a payload of **56 bytes** in total:
+- **8 bytes** Timestamp
+- **48 bytes** Padding
+
+This results in an ICMP packet of **64 bytes** *(8-byte ICMP header + 56-byte payload)*, which has been the traditional default size of `ping` since its earliest implementations. The value `56` was chosen arbitrarily – it simply produces a round total of 64 bytes.
+
+> The payload size can be changed manually:
+> ```bash
+> ping -s 1400 8.8.8.8   # sends 1400 bytes of payload instead of 56
+> ```
+> This is commonly used to **test MTU limits** or simulate larger traffic loads.
+
+**OS-dependent** padding patterns
+
+| Operating System | Padding content |
+|-----------------|-----------------|
+| **Linux** | Ascending byte sequence: `0x08, 0x09, 0x0a, ...` |
+| **macOS** | Similar ascending sequence, slight variations possible |
+| **Windows** | Fixed repeating alphabet pattern: `abcdefghijklmnopqrstuvwabcdefghi` |
+
+> **Note:** Because different operating systems use distinct padding patterns, the payload content alone can sometimes reveal **which OS sent the packet** – even without looking at the TTL or any other field. This is a minor form of **OS fingerprinting**.
+
+---
+
+**Summary** – Full Packet Structure
+
+| Bytes | Layer | Field | Size |
+|-------|-------|-------|------|
+| 1–14 | Ethernet II | Destination MAC, Source MAC, EtherType | 14 bytes |
+| 15–34 | IPv4 | Version, IHL, DSCP/ECN, Total Length, ID, Flags, TTL, Protocol, Checksum, Src IP, Dst IP | 20 bytes |
+| 35–42 | ICMP Header | Type, Code, Checksum, Identifier, Sequence Number | 8 bytes |
+| 43–50 | ICMP Payload | Timestamp *(seconds + microseconds)* | 8 bytes |
+| 51–98 | ICMP Payload | Padding *(ascending fill pattern)* | 48 bytes |
+| **Total** | | | **98 bytes** |
