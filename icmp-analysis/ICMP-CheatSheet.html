@@ -1,0 +1,2558 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Wireshark Byte-Referenz – Ethernet / IPv4 / ICMP</title>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;
+  --text:#e6edf3;--text2:#8b949e;
+  --blue:#58a6ff;--green:#3fb950;--yellow:#d29922;--red:#f85149;
+  --purple:#bc8cff;--orange:#ffa657;--teal:#39d353;--cyan:#79c0ff;--pink:#f778ba;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;font-size:14px;line-height:1.6;}
+
+/* NAV */
+nav{background:var(--bg2);border-bottom:1px solid var(--border);padding:.45rem 1rem;
+    position:sticky;top:0;z-index:200;display:flex;flex-wrap:wrap;gap:.25rem;align-items:center;}
+nav .nt{color:var(--blue);font-weight:700;font-size:12px;margin-right:.5rem;}
+nav a{background:var(--bg3);border:1px solid var(--border);border-radius:4px;
+      padding:.12rem .5rem;font-size:11px;color:var(--text);text-decoration:none;transition:all .15s;}
+nav a:hover{background:var(--blue);color:#000;border-color:var(--blue);}
+nav .sep{color:var(--border);font-size:14px;margin:0 .1rem;}
+
+/* LAYOUT */
+.container{max-width:1400px;margin:0 auto;padding:1.5rem;}
+
+/* HEADER */
+header{text-align:center;padding:2.5rem 0 2rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+header h1{font-size:2rem;font-weight:700;
+          background:linear-gradient(135deg,var(--blue),var(--purple),var(--teal));
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+header p{color:var(--text2);margin-top:.5rem;font-size:15px;}
+.badges{margin-top:.8rem;display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;}
+.badge{background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+       padding:.1rem .65rem;font-size:11px;color:var(--text2);}
+
+/* SECTION TITLES */
+.sec-title{font-size:1.05rem;font-weight:700;margin:2.5rem 0 1rem;
+           padding:.55rem 1rem;border-radius:8px;display:flex;align-items:center;gap:.7rem;}
+.sec-eth{background:rgba(88,166,255,.1);border-left:4px solid var(--blue);}
+.sec-ip {background:rgba(63,185,80,.1); border-left:4px solid var(--green);}
+.sec-icmp{background:rgba(188,140,255,.1);border-left:4px solid var(--purple);}
+.lb{font-size:11px;padding:.15rem .5rem;border-radius:4px;font-weight:700;}
+.lb-eth{background:var(--blue);color:#000;}
+.lb-ip {background:var(--green);color:#000;}
+.lb-icmp{background:var(--purple);color:#000;}
+.lb-map{background:var(--teal);color:#000;}
+
+/* BYTE MAP */
+.byte-map{display:flex;flex-wrap:wrap;gap:4px;padding:1.1rem;
+          background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:.8rem;}
+.bmt{width:100%;font-size:11px;color:var(--text2);margin-bottom:.5rem;font-weight:600;}
+.bmc{width:46px;height:46px;border-radius:5px;border:1px solid var(--border);
+     display:flex;flex-direction:column;align-items:center;justify-content:center;
+     cursor:pointer;transition:all .15s;font-size:10px;font-weight:600;}
+.bmc:hover{transform:scale(1.18);z-index:10;box-shadow:0 0 12px rgba(88,166,255,.5);}
+.bmc .bn{font-size:8px;color:rgba(255,255,255,.3);margin-bottom:1px;}
+/* byte-map colors */
+.c-ed{background:rgba(88,166,255,.2);border-color:var(--blue);color:var(--blue);}
+.c-es{background:rgba(63,185,80,.2);border-color:var(--green);color:var(--green);}
+.c-et{background:rgba(255,166,87,.2);border-color:var(--orange);color:var(--orange);}
+.c-iv{background:rgba(188,140,255,.2);border-color:var(--purple);color:var(--purple);}
+.c-iy{background:rgba(210,153,34,.2);border-color:var(--yellow);color:var(--yellow);}
+.c-il{background:rgba(248,81,73,.2);border-color:var(--red);color:var(--red);}
+.c-ii{background:rgba(121,192,255,.2);border-color:var(--cyan);color:var(--cyan);}
+.c-if{background:rgba(247,120,186,.2);border-color:var(--pink);color:var(--pink);}
+.c-it{background:rgba(57,211,83,.2);border-color:var(--teal);color:var(--teal);}
+.c-ip{background:rgba(255,166,87,.25);border-color:var(--orange);color:var(--orange);}
+.c-ik{background:rgba(88,166,255,.15);border-color:var(--blue);color:var(--blue);}
+.c-is{background:rgba(63,185,80,.15);border-color:var(--green);color:var(--green);}
+.c-id{background:rgba(188,140,255,.15);border-color:var(--purple);color:var(--purple);}
+.c-ct{background:rgba(248,81,73,.25);border-color:var(--red);color:var(--red);}
+.c-cc{background:rgba(210,153,34,.25);border-color:var(--yellow);color:var(--yellow);}
+.c-ck{background:rgba(88,166,255,.2);border-color:var(--blue);color:var(--blue);}
+.c-ci{background:rgba(63,185,80,.2);border-color:var(--green);color:var(--green);}
+.c-cs{background:rgba(188,140,255,.2);border-color:var(--purple);color:var(--purple);}
+.c-cd{background:rgba(57,211,83,.15);border-color:var(--teal);color:var(--teal);}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:2rem;
+        padding:.7rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;}
+.legend .lt{font-size:11px;color:var(--text2);font-weight:600;width:100%;margin-bottom:.2rem;}
+.legend span{font-size:11px;padding:.15rem .5rem;border-radius:3px;}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+      margin-bottom:1rem;overflow:hidden;}
+.card-h{padding:.7rem 1.2rem;display:flex;align-items:center;gap:.7rem;
+        cursor:pointer;user-select:none;transition:background .15s;flex-wrap:wrap;}
+.card-h:hover{background:var(--bg3);}
+.cp{font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;
+    padding:.1rem .5rem;color:var(--text2);font-family:monospace;white-space:nowrap;}
+.cn{font-weight:700;font-size:.95rem;}
+.cs{font-size:11px;color:var(--text2);}
+.ca{margin-left:auto;color:var(--text2);transition:transform .2s;font-size:15px;}
+.ca.open{transform:rotate(180deg);}
+.card-b{display:none;padding:1.2rem;border-top:1px solid var(--border);}
+.card-b.open{display:block;}
+
+/* VALUE SECTIONS */
+.vs{margin-bottom:1.1rem;}
+.vs h4{font-size:.82rem;font-weight:700;margin-bottom:.5rem;padding:.28rem .65rem;border-radius:4px;}
+.vn h4{background:rgba(63,185,80,.15);color:var(--green);}
+.vw h4{background:rgba(210,153,34,.15);color:var(--yellow);}
+.vd h4{background:rgba(248,81,73,.15);color:var(--red);}
+.vi h4{background:rgba(88,166,255,.15);color:var(--blue);}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:.3rem;}
+th{background:var(--bg3);color:var(--text2);font-weight:600;padding:.38rem .7rem;
+   text-align:left;border-bottom:2px solid var(--border);font-size:10px;
+   text-transform:uppercase;letter-spacing:.04em;}
+td{padding:.38rem .7rem;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(88,166,255,.04);}
+
+/* MONO COLORS */
+.m {font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--teal);font-size:11.5px;}
+.mr{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--red);font-size:11.5px;}
+.my{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--yellow);font-size:11.5px;}
+.mg{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--green);font-size:11.5px;}
+.mb{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--blue);font-size:11.5px;}
+.mp{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--purple);font-size:11.5px;}
+.mo{font-family:"Cascadia Code","Fira Code","Courier New",monospace;color:var(--orange);font-size:11.5px;}
+
+/* RISK BADGES */
+.r{display:inline-block;font-size:9px;font-weight:700;padding:.1rem .38rem;
+   border-radius:3px;margin-left:.2rem;white-space:nowrap;}
+.rok{background:rgba(63,185,80,.2);color:var(--green);border:1px solid var(--green);}
+.rw {background:rgba(210,153,34,.2);color:var(--yellow);border:1px solid var(--yellow);}
+.rh {background:rgba(255,166,87,.2);color:var(--orange);border:1px solid var(--orange);}
+.rc {background:rgba(248,81,73,.2);color:var(--red);border:1px solid var(--red);}
+
+/* NOTES */
+.note  {background:rgba(210,153,34,.08);border:1px solid rgba(210,153,34,.3);
+        border-radius:5px;padding:.55rem .9rem;margin-top:.6rem;font-size:12px;color:var(--yellow);}
+.note-r{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);
+        border-radius:5px;padding:.55rem .9rem;margin-top:.6rem;font-size:12px;color:var(--red);}
+.note-b{background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.3);
+        border-radius:5px;padding:.55rem .9rem;margin-top:.6rem;font-size:12px;color:var(--blue);}
+.note-g{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.3);
+        border-radius:5px;padding:.55rem .9rem;margin-top:.6rem;font-size:12px;color:var(--green);}
+
+/* WIRESHARK HEX BOXES */
+.wsb{background:var(--bg);border:1px solid var(--border);border-radius:7px;
+     padding:.8rem 1.1rem;margin-top:.4rem;
+     font-family:"Cascadia Code","Fira Code","Courier New",monospace;
+     font-size:11.5px;line-height:2.2;overflow-x:auto;}
+.wsl{color:var(--text2);font-size:11px;margin-bottom:.15rem;margin-top:.7rem;
+     font-family:"Segoe UI",sans-serif;font-weight:600;}
+.wsc{font-size:10px;color:var(--text2);font-family:"Segoe UI",sans-serif;display:block;margin-top:.2rem;}
+.wo{color:var(--text2);}
+
+/* HEX HIGHLIGHTS */
+.hed{background:rgba(88,166,255,.35);color:var(--blue);border-radius:2px;padding:1px 3px;}
+.hes{background:rgba(63,185,80,.35);color:var(--green);border-radius:2px;padding:1px 3px;}
+.het{background:rgba(255,166,87,.35);color:var(--orange);border-radius:2px;padding:1px 3px;}
+.hip{background:rgba(188,140,255,.28);color:var(--purple);border-radius:2px;padding:1px 3px;}
+.hiy{background:rgba(210,153,34,.35);color:var(--yellow);border-radius:2px;padding:1px 3px;}
+.hil{background:rgba(248,81,73,.28);color:var(--red);border-radius:2px;padding:1px 3px;}
+.hii{background:rgba(121,192,255,.28);color:var(--cyan);border-radius:2px;padding:1px 3px;}
+.hif{background:rgba(247,120,186,.28);color:var(--pink);border-radius:2px;padding:1px 3px;}
+.hit{background:rgba(57,211,83,.28);color:var(--teal);border-radius:2px;padding:1px 3px;}
+.hio{background:rgba(255,166,87,.28);color:var(--orange);border-radius:2px;padding:1px 3px;}
+.hik{background:rgba(88,166,255,.22);color:var(--blue);border-radius:2px;padding:1px 3px;}
+.his{background:rgba(63,185,80,.22);color:var(--green);border-radius:2px;padding:1px 3px;}
+.hid{background:rgba(188,140,255,.22);color:var(--purple);border-radius:2px;padding:1px 3px;}
+.hct{background:rgba(248,81,73,.32);color:var(--red);border-radius:2px;padding:1px 3px;}
+.hcc{background:rgba(210,153,34,.32);color:var(--yellow);border-radius:2px;padding:1px 3px;}
+.hck{background:rgba(88,166,255,.28);color:var(--blue);border-radius:2px;padding:1px 3px;}
+.hci{background:rgba(63,185,80,.28);color:var(--green);border-radius:2px;padding:1px 3px;}
+.hcs{background:rgba(188,140,255,.28);color:var(--purple);border-radius:2px;padding:1px 3px;}
+.hcd{background:rgba(57,211,83,.22);color:var(--teal);border-radius:2px;padding:1px 3px;}
+.hbad{background:rgba(248,81,73,.65);color:#fff;border-radius:2px;padding:1px 3px;font-weight:700;}
+
+/* FOOTER */
+footer{text-align:center;padding:2.5rem;color:var(--text2);font-size:11px;
+       border-top:1px solid var(--border);margin-top:3rem;}
+
+    /* ── ICMP Hex-Highlight-Klassen ─────────────────────────── */
+    .hiot { background:#e67e22; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Type */
+    .hioc { background:#f1c40f; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Code */
+    .hick { background:#3498db; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Checksum */
+    .hiid { background:#2ecc71; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Identifier */
+    .hisq { background:#1abc9c; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Sequence */
+    .hip  { background:#e91e8c; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* ICMP Payload */
+
+    /* ── IPv4 Summary Hex-Highlight-Klassen ─────────────────── */
+    .hiv  { background:#3498db; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP Ver/IHL */
+    .hid2 { background:#95a5a6; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP DSCP/ECN */
+    .hil  { background:#1abc9c; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP Total Length */
+    .hii  { background:#e91e8c; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP Identification */
+    .hif2 { background:#e91e8c; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP Flags (alt) */
+    .hid3 { background:#9b59b6; color:#fff; border-radius:3px; padding:0 2px; font-weight:700; }  /* IP Dst (Summary) */
+
+    /* ── Ethernet Summary Hex-Highlight-Klassen ─────────────── */
+    .hem  { background:#1abc9c; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* Eth Dst MAC */
+    .hes  { background:#2ecc71; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* Eth Src MAC */
+    .hee  { background:#f1c40f; color:#000; border-radius:3px; padding:0 2px; font-weight:700; }  /* Eth EtherType */
+
+  </style>
+</head>
+<body>
+<nav>
+  <span class="nt">&#9656; Wireshark Byte-Ref</span>
+  <span class="sep">|</span>
+  <a href="#bytemap">Byte-Map</a>
+  <span class="sep">|</span>
+  <a href="#eth-dst">Dst MAC</a>
+  <a href="#eth-src">Src MAC</a>
+  <a href="#eth-type">EtherType</a>
+  <span class="sep">|</span>
+  <a href="#ip-ver">Ver/IHL</a>
+  <a href="#ip-dscp">DSCP/ECN</a>
+  <a href="#ip-len">TotalLen</a>
+  <a href="#ip-id">IP-ID</a>
+  <a href="#ip-flags">Flags/Frag</a>
+  <a href="#ip-ttl">TTL</a>
+  <a href="#ip-proto">Protocol</a>
+  <a href="#ip-cksum">IP-CkSum</a>
+  <a href="#ip-src">Src IP</a>
+  <a href="#ip-dst">Dst IP</a>
+  <span class="sep">|</span>
+  <a href="#icmp-type">ICMP Type</a>
+  <a href="#icmp-code">Code</a>
+  <a href="#icmp-cksum">CkSum</a>
+  <a href="#icmp-id">ID</a>
+  <a href="#icmp-seq">Seq</a>
+  <a href="#icmp-data">Data</a>
+</nav>
+<div class="container">
+<header>
+  <h1>Wireshark Byte-Referenz</h1>
+  <p>Ethernet II &rarr; IPv4 &rarr; ICMP &bull; Jeder Byte-Bereich &bull; Normal / Verdaechtig / Gefaehrlich</p>
+  <div class="badges">
+    <span class="badge">&#128269; Byte-fuer-Byte</span>
+    <span class="badge">&#9888; Angriffserkennung</span>
+    <span class="badge">&#128187; Wireshark Hex-Beispiele</span>
+    <span class="badge">RFC 791 / RFC 792 / IEEE 802.3</span>
+    <span class="badge">Klappbar &bull; Interaktiv</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════ BYTE MAP ═══════════════════════ -->
+<div id="bytemap">
+<div class="sec-title sec-eth">
+  <span class="lb lb-map">BYTE-MAP</span>
+  Vollstaendige Paketstruktur &mdash; Ethernet II + IPv4 + ICMP Echo Request (42 Byte)
+</div>
+<div class="byte-map">
+  <div class="bmt">&#9654; Klicke auf eine Zelle &rarr; springt zum Abschnitt &bull; Farben = Felder</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">01</div>D-MAC</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">02</div>D-MAC</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">03</div>D-MAC</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">04</div>D-MAC</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">05</div>D-MAC</div>
+  <div class="bmc c-ed" onclick="go('eth-dst')" title="Destination MAC"><div class="bn">06</div>D-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">07</div>S-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">08</div>S-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">09</div>S-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">10</div>S-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">11</div>S-MAC</div>
+  <div class="bmc c-es" onclick="go('eth-src')" title="Source MAC"><div class="bn">12</div>S-MAC</div>
+  <div class="bmc c-et" onclick="go('eth-type')" title="EtherType"><div class="bn">13</div>EType</div>
+  <div class="bmc c-et" onclick="go('eth-type')" title="EtherType"><div class="bn">14</div>EType</div>
+  <div class="bmc c-iv" onclick="go('ip-ver')" title="Version + IHL"><div class="bn">15</div>V+IHL</div>
+  <div class="bmc c-iy" onclick="go('ip-dscp')" title="DSCP + ECN"><div class="bn">16</div>DSCP</div>
+  <div class="bmc c-il" onclick="go('ip-len')" title="Total Length"><div class="bn">17</div>TLen</div>
+  <div class="bmc c-il" onclick="go('ip-len')" title="Total Length"><div class="bn">18</div>TLen</div>
+  <div class="bmc c-ii" onclick="go('ip-id')" title="Identification"><div class="bn">19</div>IP-ID</div>
+  <div class="bmc c-ii" onclick="go('ip-id')" title="Identification"><div class="bn">20</div>IP-ID</div>
+  <div class="bmc c-if" onclick="go('ip-flags')" title="Flags + Fragment Offset"><div class="bn">21</div>Flags</div>
+  <div class="bmc c-if" onclick="go('ip-flags')" title="Flags + Fragment Offset"><div class="bn">22</div>Frag</div>
+  <div class="bmc c-it" onclick="go('ip-ttl')" title="Time to Live"><div class="bn">23</div>TTL</div>
+  <div class="bmc c-ip" onclick="go('ip-proto')" title="Protocol"><div class="bn">24</div>Proto</div>
+  <div class="bmc c-ik" onclick="go('ip-cksum')" title="Header Checksum"><div class="bn">25</div>CkSum</div>
+  <div class="bmc c-ik" onclick="go('ip-cksum')" title="Header Checksum"><div class="bn">26</div>CkSum</div>
+  <div class="bmc c-is" onclick="go('ip-src')" title="Source IP"><div class="bn">27</div>SrcIP</div>
+  <div class="bmc c-is" onclick="go('ip-src')" title="Source IP"><div class="bn">28</div>SrcIP</div>
+  <div class="bmc c-is" onclick="go('ip-src')" title="Source IP"><div class="bn">29</div>SrcIP</div>
+  <div class="bmc c-is" onclick="go('ip-src')" title="Source IP"><div class="bn">30</div>SrcIP</div>
+  <div class="bmc c-id" onclick="go('ip-dst')" title="Destination IP"><div class="bn">31</div>DstIP</div>
+  <div class="bmc c-id" onclick="go('ip-dst')" title="Destination IP"><div class="bn">32</div>DstIP</div>
+  <div class="bmc c-id" onclick="go('ip-dst')" title="Destination IP"><div class="bn">33</div>DstIP</div>
+  <div class="bmc c-id" onclick="go('ip-dst')" title="Destination IP"><div class="bn">34</div>DstIP</div>
+  <div class="bmc c-ct" onclick="go('icmp-type')" title="ICMP Type"><div class="bn">35</div>Type</div>
+  <div class="bmc c-cc" onclick="go('icmp-code')" title="ICMP Code"><div class="bn">36</div>Code</div>
+  <div class="bmc c-ck" onclick="go('icmp-cksum')" title="ICMP Checksum"><div class="bn">37</div>CkSum</div>
+  <div class="bmc c-ck" onclick="go('icmp-cksum')" title="ICMP Checksum"><div class="bn">38</div>CkSum</div>
+  <div class="bmc c-ci" onclick="go('icmp-id')" title="ICMP Identifier"><div class="bn">39</div>ID</div>
+  <div class="bmc c-ci" onclick="go('icmp-id')" title="ICMP Identifier"><div class="bn">40</div>ID</div>
+  <div class="bmc c-cs" onclick="go('icmp-seq')" title="ICMP Sequence"><div class="bn">41</div>Seq</div>
+  <div class="bmc c-cs" onclick="go('icmp-seq')" title="ICMP Sequence"><div class="bn">42</div>Seq</div>
+  <div class="bmc c-cd" onclick="go('icmp-data')" title="ICMP Data/Payload"><div class="bn">43+</div>Data</div>
+  <div class="bmc c-cd" onclick="go('icmp-data')" title="ICMP Data/Payload"><div class="bn">...</div>Data</div>
+</div>
+<div class="legend">
+  <div class="lt">LEGENDE:</div>
+  <span style="background:rgba(88,166,255,.2);color:var(--blue);">&#9632; Dst MAC B1-6</span>
+  <span style="background:rgba(63,185,80,.2);color:var(--green);">&#9632; Src MAC B7-12</span>
+  <span style="background:rgba(255,166,87,.2);color:var(--orange);">&#9632; EtherType B13-14</span>
+  <span style="background:rgba(188,140,255,.2);color:var(--purple);">&#9632; Ver/IHL B15</span>
+  <span style="background:rgba(210,153,34,.2);color:var(--yellow);">&#9632; DSCP/ECN B16</span>
+  <span style="background:rgba(248,81,73,.2);color:var(--red);">&#9632; TotalLen B17-18</span>
+  <span style="background:rgba(121,192,255,.2);color:var(--cyan);">&#9632; IP-ID B19-20</span>
+  <span style="background:rgba(247,120,186,.2);color:var(--pink);">&#9632; Flags/Frag B21-22</span>
+  <span style="background:rgba(57,211,83,.2);color:var(--teal);">&#9632; TTL B23</span>
+  <span style="background:rgba(255,166,87,.25);color:var(--orange);">&#9632; Protocol B24</span>
+  <span style="background:rgba(88,166,255,.15);color:var(--blue);">&#9632; IP-CkSum B25-26</span>
+  <span style="background:rgba(63,185,80,.15);color:var(--green);">&#9632; Src IP B27-30</span>
+  <span style="background:rgba(188,140,255,.15);color:var(--purple);">&#9632; Dst IP B31-34</span>
+  <span style="background:rgba(248,81,73,.25);color:var(--red);">&#9632; ICMP Type B35</span>
+  <span style="background:rgba(210,153,34,.25);color:var(--yellow);">&#9632; ICMP Code B36</span>
+  <span style="background:rgba(88,166,255,.2);color:var(--blue);">&#9632; ICMP CkSum B37-38</span>
+  <span style="background:rgba(63,185,80,.2);color:var(--green);">&#9632; ICMP ID B39-40</span>
+  <span style="background:rgba(188,140,255,.2);color:var(--purple);">&#9632; ICMP Seq B41-42</span>
+  <span style="background:rgba(57,211,83,.15);color:var(--teal);">&#9632; ICMP Data B43+</span>
+</div>
+</div>
+
+<!-- ═══════════════════════ ETHERNET II ═══════════════════════ -->
+<div class="sec-title sec-eth">
+  <span class="lb lb-eth">L2</span>
+  Ethernet II &mdash; Bytes 1&ndash;14
+</div>
+
+<!-- ─── DST MAC ─────────────────────────────────────────────── -->
+<div class="card" id="eth-dst">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 1&ndash;6</span>
+    <span class="cn" style="color:var(--blue)">Destination MAC Address</span>
+    <span class="cs">6 Byte &bull; 48 Bit &bull; OUI (3 Byte Hersteller) + NIC-ID (3 Byte)</span>
+    <span class="ca open">&#9660;</span>
+  </div>
+  <div class="card-b open">
+    <div class="note-b">
+      &#128270; <b>Wireshark:</b> Klick auf &ldquo;Ethernet II &rarr; Destination&rdquo; in Area&nbsp;2
+      markiert Bytes 1&ndash;6 in Area&nbsp;3 blau.
+      Wireshark loest bekannte OUIs automatisch auf:
+      <code>Destination: Cisco_ab:cd:12 (e4:5f:01:ab:cd:12)</code>
+    </div>
+
+    <!-- NORMAL: Bit-Regeln -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Bit-Regeln des ersten Bytes (IEEE 802.3)</h4>
+      <table>
+        <tr><th>Bit 0 (LSB) = I/G</th><th>Bit 1 = U/L</th><th>Typ</th><th>Beispiel</th><th>Bedeutung</th></tr>
+        <tr><td>0</td><td>0</td><td>Unicast, Global (OUI)</td><td class="m">00:1a:2b:xx:xx:xx</td><td>Normales Endgeraet &rarr; STANDARD</td></tr>
+        <tr><td>1</td><td>0</td><td>Multicast</td><td class="m">01:00:5e:xx:xx:xx</td><td>Gruppe von Empfaengern (IPv4-Multicast)</td></tr>
+        <tr><td>1</td><td>1</td><td>Broadcast</td><td class="m">ff:ff:ff:ff:ff:ff</td><td>Alle Geraete im Segment</td></tr>
+        <tr><td>0</td><td>1</td><td>Unicast, Locally Administered</td><td class="m">02:xx:xx:xx:xx:xx</td><td>Manuell gesetzt, kein OUI vergeben</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Merkhilfe:</b> Bit 0 = Individual/Group (0=Unicast, 1=Multi/Broadcast).
+        Bit 1 = Universal/Local (0=OUI-vergeben, 1=manuell gesetzt).
+        Beide Bits stehen im <b>ersten Byte</b> der MAC, LSB-first.
+      </div>
+    </div>
+
+    <!-- NORMAL: Haeufige OUIs -->
+    <div class="vs vn">
+      <h4>&#9989; NORMAL &mdash; Haeufige Hersteller-OUIs (IEEE-Datenbank)</h4>
+      <table>
+        <tr><th>OUI (erste 3 Byte)</th><th>Hersteller</th><th>Typisches Geraet</th><th>Kontext</th></tr>
+        <tr><td class="m">e4:5f:01:xx:xx:xx</td><td>Cisco Systems</td><td>Switch, Router</td><td>Gateway / Core-Switch im LAN</td></tr>
+        <tr><td class="m">00:50:56:xx:xx:xx</td><td>VMware Inc.</td><td>Virtuelle NIC (vSphere)</td><td>VMware ESXi / vSphere</td></tr>
+        <tr><td class="m">00:0c:29:xx:xx:xx</td><td>VMware Inc.</td><td>Virtuelle NIC (Workstation)</td><td>VMware Workstation / Fusion &rarr; dein Lab</td></tr>
+        <tr><td class="m">08:00:27:xx:xx:xx</td><td>PCS Systemtechnik (VirtualBox)</td><td>Virtuelle NIC</td><td>Oracle VirtualBox Lab</td></tr>
+        <tr><td class="m">52:54:00:xx:xx:xx</td><td>QEMU/KVM (Locally Adm.)</td><td>Virtuelle NIC</td><td>KVM / QEMU Hypervisor</td></tr>
+        <tr><td class="m">ac:de:48:xx:xx:xx</td><td>Apple Inc.</td><td>MacBook, iPhone</td><td>Apple-Geraet im Netz</td></tr>
+        <tr><td class="m">b4:2e:99:xx:xx:xx</td><td>Intel Corp.</td><td>Intel NIC (Laptop/PC)</td><td>Windows / Linux PC</td></tr>
+        <tr><td class="m">3c:22:fb:xx:xx:xx</td><td>Raspberry Pi Ltd.</td><td>Raspberry Pi</td><td>IoT / Lab-Geraet</td></tr>
+        <tr><td class="m">74:d4:35:xx:xx:xx</td><td>Dell Inc.</td><td>Server, PC</td><td>Unternehmensumgebung</td></tr>
+        <tr><td class="m">f0:18:98:xx:xx:xx</td><td>Huawei Technologies</td><td>Switch, Router</td><td>Enterprise / Carrier</td></tr>
+        <tr><td class="m">00:25:90:xx:xx:xx</td><td>Super Micro Computer</td><td>Server-Mainboard</td><td>Rechenzentrum</td></tr>
+        <tr><td class="m">00:1a:a0:xx:xx:xx</td><td>Fortinet Inc.</td><td>FortiGate Firewall</td><td>Perimeter-Sicherheit</td></tr>
+      </table>
+    </div>
+
+    <!-- NORMAL: Bekannte Multicast-Adressen -->
+    <div class="vs vn">
+      <h4>&#9989; NORMAL &mdash; Bekannte Multicast-Zieladressen (Bit 0 = 1, legitim)</h4>
+      <table>
+        <tr><th>Hex</th><th>Protokoll</th><th>Zweck</th><th>Wann normal</th></tr>
+        <tr><td class="m">01:00:5e:xx:xx:xx</td><td>IPv4 Multicast</td><td>Multicast-Gruppe (RFC 1112)</td><td>OSPF, mDNS, IGMP in Multicast-Netzen</td></tr>
+        <tr><td class="m">33:33:xx:xx:xx:xx</td><td>IPv6 Multicast</td><td>IPv6-Multicast-Gruppe (RFC 2464)</td><td>Normal in IPv6-faehigen Netzen</td></tr>
+        <tr><td class="m">01:00:5e:00:00:01</td><td>OSPF All Routers</td><td>224.0.0.1 &rarr; alle Router</td><td>OSPF-Routing-Protokoll</td></tr>
+        <tr><td class="m">01:00:5e:00:00:02</td><td>OSPF DR/BDR</td><td>224.0.0.2 &rarr; alle OSPF-Router</td><td>OSPF-Routing-Protokoll</td></tr>
+        <tr><td class="m">01:80:c2:00:00:00</td><td>STP BPDU</td><td>Spanning Tree (IEEE 802.1D)</td><td>Nur auf Switch-Uplinks normal</td></tr>
+        <tr><td class="m">01:80:c2:00:00:0e</td><td>LLDP</td><td>Link Layer Discovery Protocol</td><td>Switch-zu-Switch Nachbarschaft</td></tr>
+        <tr><td class="m">ff:ff:ff:ff:ff:ff</td><td>Broadcast</td><td>Alle Geraete im Segment</td><td>ARP-Request, DHCP-Discover</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete oder auffaellige Zieladressen</h4>
+      <table>
+        <tr><th>Hex</th><th>Bedeutung</th><th>Warum auffaellig</th><th>Risiko</th></tr>
+        <tr><td class="my">02:xx:xx:xx:xx:xx</td><td>Locally Administered Unicast</td><td>Bit 1 = 1 &rarr; manuell gesetzt, kein OUI &rarr; Spoofing moeglich</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">00:00:00:00:00:00</td><td>Null-MAC</td><td>Kein gueltiges Geraet &rarr; Fuzzing-Tool oder fehlerhafte Implementierung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">de:ad:be:ef:xx:xx</td><td>Debug-Pattern</td><td>Bekanntes Test-Muster aus Exploit-Frameworks (Metasploit, Scapy)</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">ca:fe:xx:xx:xx:xx</td><td>Debug-Pattern</td><td>Haeufig in Exploit-Code und Fuzzing-Tools</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">00:11:22:33:44:55</td><td>Sequenzielles Muster</td><td>Typisch fuer automatisierte Skripte und Scan-Tools</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">01:00:0c:cc:cc:cc</td><td>Cisco CDP / VTP</td><td>Cisco-Protokoll &rarr; Netzwerk-Topologie-Leak moeglich</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Angriffs-Indikatoren</h4>
+      <table>
+        <tr><th>Hex</th><th>Angriff</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td class="mr">ff:ff:ff:ff:ff:ff</td><td>Broadcast-Flooding</td><td>Massenhaft Broadcasts &rarr; ARP-Spoofing, DHCP-Starvation, DoS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="mr">01:80:c2:00:00:00</td><td>STP-Angriff</td><td>Spanning Tree BPDU &rarr; Root-Bridge-Uebernahme &rarr; Netzwerk-Umleitung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="mr">01:00:0c:cc:cc:cd</td><td>Cisco PVST+</td><td>Per-VLAN Spanning Tree &rarr; VLAN-spezifische Root-Bridge-Uebernahme</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="mr">01:00:5e:xx:xx:xx</td><td>Multicast-Amplification</td><td>Gezielter Multicast-Flood &rarr; Amplification-Angriff moeglich</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="mr">[rapid wechselnde MACs]</td><td>MAC Flooding</td><td>CAM-Table-Overflow &rarr; Switch degradiert zu Hub &rarr; Sniffing aller Frames</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normales ICMP-Paket (Kali Linux &rarr; Gateway):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hed">e4 5f 01 ab cd 12</span> <span class="hes">00 0c 29 3a 1b 7f</span> <span class="het">08 00</span> <span class="hip">45 00</span>
+        <span class="wsc">&#9632; <span style="color:var(--blue)">e4 5f 01 ab cd 12</span> = Dst MAC Cisco (OUI e4:5f:01) &rarr; Wireshark: "Destination: Cisco_ab:cd:12"
+&#9632; <span style="color:var(--green)">00 0c 29 3a 1b 7f</span> = Src MAC VMware (OUI 00:0c:29) &rarr; Wireshark: "Source: VMware_3a:1b:7f"
+&#9632; <span style="color:var(--orange)">08 00</span> = EtherType IPv4 &rarr; Wireshark: "Type: IPv4 (0x0800)"</span>
+      </div>
+      <div class="wsl">ARP-Request (Broadcast als Dst &rarr; normal):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hed">ff ff ff ff ff ff</span> <span class="hes">00 0c 29 3a 1b 7f</span> <span class="het">08 06</span> 00 01
+        <span class="wsc">&#9632; <span style="color:var(--blue)">ff ff ff ff ff ff</span> = Broadcast &rarr; normal bei ARP-Request (Wer hat IP x.x.x.x?)
+&#9632; <span style="color:var(--orange)">08 06</span> = EtherType ARP</span>
+      </div>
+      <div class="wsl">STP BPDU (Root-Bridge-Angriff &rarr; gefaehrlich):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hbad">01 80 c2 00 00 00</span> <span class="hes">00 0c 29 3a 1b 7f</span> <span class="hbad">00 26</span> 42 42
+        <span class="wsc">&#9632; <span style="color:var(--red)">01 80 c2 00 00 00</span> = STP Multicast-Dst &rarr; Bit 0 = 1 (Multicast) &rarr; Wireshark: "Spanning Tree Protocol"
+&#9632; Angreifer sendet BPDU mit niedrigerer Bridge-ID &rarr; wird neue Root-Bridge &rarr; gesamter Traffic laeuft durch Angreifer</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>OUI-Lookup:</b> macvendors.com oder in Wireshark: Edit &rarr; Preferences &rarr; Name Resolution &rarr; "Resolve MAC addresses"</div>
+  </div>
+</div>
+
+<!-- ─── SRC MAC ─────────────────────────────────────────────── -->
+<div class="card" id="eth-src">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 7&ndash;12</span>
+    <span class="cn" style="color:var(--green)">Source MAC Address</span>
+    <span class="cs">6 Byte &bull; 48 Bit &bull; NICHT authentifiziert &bull; trivial faelschbar!</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-r">
+      &#9888; <b>Kritisch:</b> Die Source-MAC ist auf Ethernet-Ebene <b>nicht authentifiziert</b>.
+      Jeder Host kann eine beliebige Source-MAC senden (MAC Spoofing).
+      Sie darf <b>niemals</b> als Sicherheitsmerkmal verwendet werden.
+      Einzige Ausnahme: 802.1X Port-Authentifizierung prueft die MAC indirekt ueber den Switch-Port.
+    </div>
+
+    <!-- NORMAL: Bit-Struktur -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Bit-Struktur des ersten Bytes (gueltiger Source)</h4>
+      <table>
+        <tr><th>Erstes Byte (hex)</th><th>Binaer</th><th>Bit 0 (I/G)</th><th>Bit 1 (U/L)</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00</td><td class="m">0000 0000</td><td>0</td><td>0</td><td>Unicast, Global (OUI-vergeben) &rarr; NORMALFALL</td></tr>
+        <tr><td class="m">ac</td><td class="m">1010 1100</td><td>0</td><td>0</td><td>Unicast, Global (Apple OUI ac:de:48)</td></tr>
+        <tr><td class="m">b4</td><td class="m">1011 0100</td><td>0</td><td>0</td><td>Unicast, Global (Intel OUI b4:2e:99)</td></tr>
+        <tr><td class="m">e4</td><td class="m">1110 0100</td><td>0</td><td>0</td><td>Unicast, Global (Cisco OUI e4:5f:01)</td></tr>
+        <tr><td class="m">f0</td><td class="m">1111 0000</td><td>0</td><td>0</td><td>Unicast, Global (Huawei OUI f0:18:98)</td></tr>
+        <tr><td class="m">74</td><td class="m">0111 0100</td><td>0</td><td>0</td><td>Unicast, Global (Dell OUI 74:d4:35)</td></tr>
+        <tr><td class="m">52</td><td class="m">0101 0010</td><td>0</td><td>1</td><td>Unicast, Locally Administered (QEMU/KVM &rarr; legitim in VMs)</td></tr>
+        <tr><td class="m">02</td><td class="m">0000 0010</td><td>0</td><td>1</td><td>Unicast, Locally Administered (Docker, manuell &rarr; Kontext beachten)</td></tr>
+      </table>
+    </div>
+
+    <!-- NORMAL: Typische Werte -->
+    <div class="vs vn">
+      <h4>&#9989; NORMAL &mdash; Typische Source-MACs in der Praxis</h4>
+      <table>
+        <tr><th>Hex</th><th>Hersteller / Typ</th><th>Geraet</th><th>Kontext</th></tr>
+        <tr><td class="m">00:0c:29:3a:1b:7f</td><td>VMware Inc.</td><td>VMware Workstation VM</td><td>Kali Linux in VMware &rarr; dein Lab</td></tr>
+        <tr><td class="m">08:00:27:ab:cd:ef</td><td>VirtualBox</td><td>VirtualBox VM</td><td>Lab-Umgebung</td></tr>
+        <tr><td class="m">52:54:00:12:34:56</td><td>QEMU/KVM</td><td>KVM-VM</td><td>Linux-Hypervisor (LA-Bit gesetzt, aber legitim)</td></tr>
+        <tr><td class="m">02:42:ac:11:00:02</td><td>Docker (LA)</td><td>Container veth</td><td>Docker-Netzwerk (LA-Bit gesetzt, legitim)</td></tr>
+        <tr><td class="m">ac:de:48:12:34:56</td><td>Apple Inc.</td><td>MacBook</td><td>Entwickler-Rechner</td></tr>
+        <tr><td class="m">b4:2e:99:aa:bb:cc</td><td>Intel Corp.</td><td>Laptop NIC</td><td>Windows / Linux PC</td></tr>
+        <tr><td class="m">e4:5f:01:11:22:33</td><td>Cisco Systems</td><td>Router-Interface</td><td>Gateway leitet Paket weiter</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; RFC-Verletzungen und Spoofing-Indikatoren</h4>
+      <table>
+        <tr><th>Hex</th><th>Bit 0</th><th>Bit 1</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">01:xx:xx:xx:xx:xx</td><td>1</td><td>0</td><td>Multicast als Source &rarr; RFC-Verletzung! Eine Source-MAC darf niemals Multicast sein (IEEE 802.3)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">ff:ff:ff:ff:ff:ff</td><td>1</td><td>1</td><td>Broadcast als Source &rarr; absolut ungueltig, wird von korrekten Implementierungen verworfen</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">00:00:00:00:00:00</td><td>0</td><td>0</td><td>Null-MAC als Source &rarr; fehlerhafte NIC, Fuzzing-Tool oder Exploit-Framework</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">de:ad:be:ef:xx:xx</td><td>0</td><td>1</td><td>Debug-Pattern &rarr; Exploit-Framework (Scapy, Metasploit) oder Malware</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">02:xx:xx:xx:xx:xx</td><td>0</td><td>1</td><td>Locally Administered &rarr; kein OUI, manuell gesetzt &rarr; Spoofing-Verdacht (Kontext pruefen!)</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">00:11:22:33:44:55</td><td>0</td><td>0</td><td>Sequenzielles Muster &rarr; automatisiertes Skript oder Scan-Tool</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+      <div class="note" style="margin-top:.5rem;">
+        &#9888; <b>Kontext ist entscheidend:</b> Locally Administered MACs (Bit 1 = 1) sind in
+        Docker-, KVM- und QEMU-Umgebungen <b>normal</b>. Verdaechtig sind sie nur, wenn kein
+        Virtualisierungskontext vorliegt oder wenn die MAC sich staendig aendert.
+      </div>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; MAC Spoofing Angriffe</h4>
+      <table>
+        <tr><th>Angriff</th><th>Wireshark-Indikator</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>ARP Spoofing / MITM</td><td class="mr">Src-MAC != ARP-Sender-HW-Addr</td><td>Angreifer sendet ARP-Reply mit eigener MAC fuer fremde IP &rarr; Traffic wird umgeleitet</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>MAC Flooding</td><td class="mr">100+ verschiedene Src-MACs/Sek.</td><td>CAM-Table-Overflow &rarr; Switch sendet alle Frames an alle Ports &rarr; Sniffing moeglich</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>MAC Cloning</td><td class="mr">Identische Src-MAC von 2 Ports</td><td>Angreifer klont MAC eines legitimen Hosts &rarr; Session-Hijacking, ACL-Umgehung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Identity Theft</td><td class="mr">Src-MAC = bekannte Server-MAC</td><td>Angreifer gibt sich als vertrauenswuerdiger Server aus &rarr; Firewall-/ACL-Umgehung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>DHCP Starvation</td><td class="mr">Src-MAC wechselt bei jedem DHCP-Req.</td><td>Jeder DHCP-Request mit neuer MAC belegt eine IP &rarr; IP-Pool erschoepft &rarr; DoS</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normale VMware-Source-MAC (Kali Linux Lab):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hed">e4 5f 01 ab cd 12</span> <span class="hes">00 0c 29 3a 1b 7f</span> <span class="het">08 00</span> <span class="hip">45 00</span>
+        <span class="wsc">&#9632; <span style="color:var(--green)">00 0c 29 3a 1b 7f</span> = Src MAC, OUI 00:0c:29 = VMware &rarr; Wireshark: "Source: VMware_3a:1b:7f (00:0c:29:3a:1b:7f)"
+&#9632; Bit 0 = 0 (Unicast), Bit 1 = 0 (Global/OUI) &rarr; normaler Wert</span>
+      </div>
+      <div class="wsl">Locally Administered MAC (Docker-Container &rarr; legitim):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hed">e4 5f 01 ab cd 12</span> <span class="hes">02 42 ac 11 00 05</span> <span class="het">08 00</span> <span class="hip">45 00</span>
+        <span class="wsc">&#9632; <span style="color:var(--green)">02 42 ac 11 00 05</span> = Src MAC, erstes Byte 0x02 = 0000 0010 &rarr; Bit 1 = 1 (Locally Administered)
+&#9632; Kein OUI &rarr; Wireshark zeigt keinen Herstellernamen &rarr; Kontext pruefen (Docker? KVM? Spoofing?)</span>
+      </div>
+      <div class="wsl">Multicast als Source (RFC-Verletzung &rarr; Angriff / Fuzzing):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span><span class="hed">e4 5f 01 ab cd 12</span> <span class="hbad">01 00 5e 00 00 01</span> <span class="het">08 00</span> <span class="hip">45 00</span>
+        <span class="wsc">&#9632; <span style="color:var(--red)">01 00 5e 00 00 01</span> = Src MAC, erstes Byte 0x01 = 0000 0001 &rarr; Bit 0 = 1 (Multicast)
+&#9632; IEEE 802.3: Source-MAC darf NIEMALS Multicast sein &rarr; RFC-Verletzung &rarr; Wireshark: Malformed Packet</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>eth.src[0] &amp; 0x01 == 1</code> findet alle Pakete mit Multicast/Broadcast als Source &rarr; immer verdaechtig und RFC-widrig.</div>
+  </div>
+</div>
+
+<!-- ─── ETHERTYPE ──────────────────────────────────────────── -->
+<div class="card" id="eth-type">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 13&ndash;14</span>
+    <span class="cn" style="color:var(--orange)">EtherType</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Protokoll-Identifikator des naechsten Layers</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Regel (IEEE 802.3):</b> Wert &ge; 0x0600 (1536) = EtherType (Protokoll-ID des naechsten Layers).
+      Wert &lt; 0x0600 = Laengenfeld (IEEE 802.3 LLC/SNAP-Frame, heute selten).
+      Wireshark zeigt: <code>Type: IPv4 (0x0800)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Haeufige EtherTypes (IANA-Datenbank)</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Protokoll</th><th>Standard</th><th>Kontext</th></tr>
+        <tr><td class="m">08 00</td><td>2048</td><td>IPv4</td><td>RFC 791</td><td>Standard-IP-Traffic &rarr; unser ICMP-Paket laeuft hierueber</td></tr>
+        <tr><td class="m">08 06</td><td>2054</td><td>ARP</td><td>RFC 826</td><td>Address Resolution &rarr; normal in jedem LAN</td></tr>
+        <tr><td class="m">86 dd</td><td>34525</td><td>IPv6</td><td>RFC 8200</td><td>Normal in modernen Dual-Stack-Netzen</td></tr>
+        <tr><td class="m">88 cc</td><td>34508</td><td>LLDP</td><td>IEEE 802.1AB</td><td>Link Layer Discovery &rarr; Switch-zu-Switch-Nachbarschaft</td></tr>
+        <tr><td class="m">88 09</td><td>34825</td><td>LACP</td><td>IEEE 802.3ad</td><td>Link Aggregation Control &rarr; Trunk-Ports</td></tr>
+        <tr><td class="m">88 e5</td><td>35045</td><td>MACsec</td><td>IEEE 802.1AE</td><td>Layer-2-Verschluesselung</td></tr>
+        <tr><td class="m">88 8e</td><td>34958</td><td>802.1X EAPOL</td><td>IEEE 802.1X</td><td>Port-basierte Netzwerk-Authentifizierung</td></tr>
+        <tr><td class="m">88 f7</td><td>35063</td><td>PTP (IEEE 1588)</td><td>IEEE 1588</td><td>Precision Time Protocol &rarr; Industrie / Telco</td></tr>
+        <tr><td class="m">09 00</td><td>2304</td><td>Xerox PUP</td><td>veraltet</td><td>Historisch, heute nicht mehr erwartet</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete EtherTypes</h4>
+      <table>
+        <tr><th>Hex</th><th>Protokoll</th><th>Warum verdaechtig</th><th>Risiko</th></tr>
+        <tr><td class="my">81 00</td><td>802.1Q VLAN Tag</td><td>VLAN-Tag unerwartet auf Access-Port &rarr; VLAN-Hopping-Versuch moeglich</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">88 a8</td><td>802.1ad QinQ</td><td>Double-Tagging &rarr; klassischer VLAN-Hopping-Angriff (RFC 4664)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">91 00</td><td>VLAN Double Tag</td><td>Weiteres Double-Tag-Format &rarr; Firewall-/ACL-Umgehung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">88 47</td><td>MPLS Unicast</td><td>MPLS unerwartet im normalen LAN &rarr; Tunnel-Verdacht</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">88 48</td><td>MPLS Multicast</td><td>MPLS Multicast unerwartet im LAN</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">81 37</td><td>Novell IPX</td><td>Veraltet (eingestellt ~2000) &rarr; Legacy-System oder getunnelter Traffic</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">80 9b</td><td>AppleTalk</td><td>Veraltet (eingestellt 2009) &rarr; sehr ungewoehnlich</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">08 35</td><td>RARP</td><td>Reverse ARP &rarr; veraltet, durch DHCP ersetzt &rarr; sollte nicht mehr auftreten</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH: VLAN Hopping -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; VLAN-Hopping-Angriff (Double Tagging)</h4>
+      <table>
+        <tr><th>Schritt</th><th>Was passiert</th><th>EtherType</th></tr>
+        <tr><td>1. Angreifer sendet</td><td>Frame mit zwei VLAN-Tags: aeusserer Tag = natives VLAN des Trunks</td><td class="mr">88 a8 (QinQ) oder 81 00</td></tr>
+        <tr><td>2. Switch 1 empfaengt</td><td>Entfernt aeusseren Tag (natives VLAN) &rarr; leitet Frame weiter</td><td class="mr">81 00 (innerer Tag bleibt)</td></tr>
+        <tr><td>3. Switch 2 empfaengt</td><td>Sieht inneren Tag als Ziel-VLAN &rarr; leitet in Ziel-VLAN weiter</td><td class="mr">08 00 (nach Entfernung)</td></tr>
+        <tr><td>4. Ergebnis</td><td>Angreifer erreicht VLAN, fuer das er keine Berechtigung hat</td><td class="mr">Einweg-Angriff (kein Return-Traffic)</td></tr>
+      </table>
+      <div class="note-r" style="margin-top:.5rem;">
+        &#128721; <b>Gegenmassnahme:</b> Natives VLAN auf Trunk-Ports auf ein dediziertes, ungenutztes VLAN setzen (nicht VLAN 1).
+        Access-Ports duerfen niemals 802.1Q-Tags akzeptieren.
+      </div>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normal IPv4 (ICMP-Paket):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>e4 5f 01 ab cd 12 00 0c 29 3a 1b 7f <span class="het">08 00</span> <span class="hip">45 00</span>
+        <span class="wsc">&#9632; Bytes 13-14: <span style="color:var(--orange)">08 00</span> = 0x0800 = IPv4 &rarr; Wireshark: "Type: IPv4 (0x0800)"</span>
+      </div>
+      <div class="wsl">ARP (normal):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>ff ff ff ff ff ff 00 0c 29 3a 1b 7f <span class="het">08 06</span> 00 01 08 00
+        <span class="wsc">&#9632; Bytes 13-14: <span style="color:var(--orange)">08 06</span> = 0x0806 = ARP &rarr; Wireshark: "Type: ARP (0x0806)"</span>
+      </div>
+      <div class="wsl">VLAN-Hopping Double-Tag Angriff:</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>ff ff ff ff ff ff 00 0c 29 3a 1b 7f <span class="hbad">88 a8</span> <span style="color:var(--red)">00 0a</span> <span class="hbad">81 00</span> <span style="color:var(--red)">00 64</span> <span class="het">08 00</span>
+        <span class="wsc">&#9632; <span style="color:var(--red)">88 a8</span> = QinQ outer Tag (VLAN 10) &rarr; <span style="color:var(--red)">81 00</span> = 802.1Q inner Tag (VLAN 100)
+&#9632; Switch entfernt nur aeusseren Tag &rarr; innerer Tag bringt Frame in VLAN 100 &rarr; VLAN-Hopping</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ IPv4 HEADER ═══════════════════════ -->
+<div class="sec-title sec-ip">
+  <span class="lb lb-ip">L3</span>
+  IPv4 Header &mdash; Bytes 15&ndash;34 (RFC 791)
+</div>
+
+<!-- ─── VERSION + IHL ─────────────────────────────────────────── -->
+<div class="card" id="ip-ver">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 15</span>
+    <span class="cn" style="color:var(--purple)">Version (4 Bit) + IHL (4 Bit)</span>
+    <span class="cs">1 Byte &bull; oberes Nibble = IP-Version &bull; unteres Nibble = Header-Laenge in 32-Bit-Woertern</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Aufbau:</b> 1 Byte = 2 Nibbles (je 4 Bit).
+      Beispiel: <code>0x45</code> &rarr; oberes Nibble <b>4</b> = IPv4, unteres Nibble <b>5</b> = IHL.
+      IHL &times; 4 = Header-Groesse in Byte. IHL 5 &rarr; 20 Byte (kein Options-Feld).
+      IHL &lt; 5 ist <b>immer ungueltig</b> (RFC 791).
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Alle gueltigen IHL-Werte (IHL 5&ndash;15)</h4>
+      <table>
+        <tr><th>Hex</th><th>Binaer</th><th>Version</th><th>IHL</th><th>Header-Groesse</th><th>Options-Bytes</th><th>Haeufigkeit</th></tr>
+        <tr><td class="m">45</td><td class="m">0100 0101</td><td>4</td><td>5</td><td>20 Byte</td><td>0</td><td>&#9733;&#9733;&#9733;&#9733;&#9733; STANDARD &gt;99%</td></tr>
+        <tr><td class="m">46</td><td class="m">0100 0110</td><td>4</td><td>6</td><td>24 Byte</td><td>4</td><td>Selten (NOP / Timestamp)</td></tr>
+        <tr><td class="m">47</td><td class="m">0100 0111</td><td>4</td><td>7</td><td>28 Byte</td><td>8</td><td>Sehr selten</td></tr>
+        <tr><td class="m">48</td><td class="m">0100 1000</td><td>4</td><td>8</td><td>32 Byte</td><td>12</td><td>Sehr selten (Record Route)</td></tr>
+        <tr><td class="m">4b</td><td class="m">0100 1011</td><td>4</td><td>11</td><td>44 Byte</td><td>24</td><td>Selten (Timestamp-Option)</td></tr>
+        <tr><td class="m">4f</td><td class="m">0100 1111</td><td>4</td><td>15</td><td>60 Byte</td><td>40</td><td>Maximum (RFC 791)</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Merkhilfe:</b> IHL &times; 4 = Header-Groesse in Byte.
+        IHL 5 = 5 &times; 4 = 20 Byte = Minimum-Header ohne Optionen.
+        IHL 15 = 15 &times; 4 = 60 Byte = Maximum-Header.
+      </div>
+    </div>
+
+    <!-- NORMAL: IPv4 Options -->
+    <div class="vs vn">
+      <h4>&#9989; NORMAL &mdash; Bekannte IPv4-Optionen (wenn IHL &gt; 5)</h4>
+      <table>
+        <tr><th>Option-Code</th><th>Name</th><th>Zweck</th><th>Wann legitim</th></tr>
+        <tr><td class="m">0x00</td><td>End of Options List</td><td>Abschluss der Options-Liste</td><td>Immer am Ende der Optionen</td></tr>
+        <tr><td class="m">0x01</td><td>NOP (No Operation)</td><td>Padding / Alignment</td><td>Haeufig als Fueller</td></tr>
+        <tr><td class="m">0x07</td><td>Record Route</td><td>Zeichnet Hop-Adressen auf</td><td>Diagnose / Traceroute-Variante</td></tr>
+        <tr><td class="m">0x44</td><td>Internet Timestamp</td><td>Zeitstempel an jedem Hop</td><td>Netzwerk-Diagnose</td></tr>
+        <tr><td class="m">0x94</td><td>Strict Source Route</td><td>Erzwingt exakten Pfad</td><td>Legitim, aber haeufig geblockt</td></tr>
+        <tr><td class="m">0x83</td><td>Loose Source Route</td><td>Gibt Zwischen-Hops vor</td><td>Legitim, aber haeufig geblockt</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete Version oder IHL-Werte</h4>
+      <table>
+        <tr><th>Hex</th><th>Version</th><th>IHL</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">40</td><td>4</td><td>0</td><td>IHL = 0 &rarr; RFC-Verletzung, Header-Groesse 0 Byte &rarr; unmoeglich</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">41</td><td>4</td><td>1</td><td>IHL = 1 &rarr; 4 Byte Header &rarr; zu klein fuer Pflichtfelder (Min. 20 Byte)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">44</td><td>4</td><td>4</td><td>IHL = 4 &rarr; 16 Byte &rarr; zu klein fuer 20-Byte-Mindest-Header</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">4c</td><td>4</td><td>12</td><td>IHL = 12 &rarr; 48 Byte &rarr; sehr gross, Options-Feld pruefen</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">60</td><td>6</td><td>0</td><td>IPv6 im IPv4-Frame &rarr; falscher EtherType (sollte 0x86DD sein) &rarr; Tunnel-Verdacht</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">00</td><td>0</td><td>0</td><td>Version 0 &rarr; absolut ungueltig &rarr; Fuzzing oder Exploit</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH: Source Routing -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Missbrauch von IPv4-Optionen</h4>
+      <table>
+        <tr><th>Option</th><th>Angriff</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Strict/Loose Source Routing</td><td>Pfad-Manipulation</td><td>Angreifer erzwingt Route durch kompromittierten Host &rarr; MITM, Firewall-Umgehung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Record Route</td><td>Topologie-Aufklaerung</td><td>Zeichnet alle Hop-Adressen auf &rarr; Netzwerk-Topologie wird offenbart</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Timestamp</td><td>Timing-Angriff</td><td>Zeitstempel-Informationen koennen fuer Fingerprinting genutzt werden</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>IHL-Manipulation</td><td>Evasion</td><td>Falsche IHL verwirrt IDS/Firewall &rarr; Payload wird falsch interpretiert</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Standard ICMP-Paket (IHL=5, keine Optionen):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>e4 5f 01 ab cd 12 00 0c 29 3a 1b 7f 08 00 <span class="hip">45</span> <span class="hiy">00</span>
+        <span class="wsc">&#9632; Byte 15: <span style="color:var(--purple)">45</span> = 0x45 &rarr; oberes Nibble 4 = IPv4, unteres Nibble 5 = IHL
+&#9632; IHL 5 &times; 4 = 20 Byte Header &rarr; Wireshark: "Version: 4, Header Length: 20 bytes (5)"</span>
+      </div>
+      <div class="wsl">Ungueltige IHL (Fuzzing / Exploit):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>e4 5f 01 ab cd 12 00 0c 29 3a 1b 7f 08 00 <span class="hbad">42</span> <span class="hiy">00</span>
+        <span class="wsc">&#9632; Byte 15: <span style="color:var(--red)">42</span> = 0x42 &rarr; Version 4, IHL 2 &rarr; 2 &times; 4 = 8 Byte &rarr; RFC-Verletzung!
+&#9632; Wireshark: "Header Length: 8 bytes (2) [INVALID, should be &gt;= 20]"</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.hdr_len &lt; 20</code> findet alle Pakete mit ungueltigem IHL-Wert.</div>
+  </div>
+</div>
+
+<!-- ─── DSCP / ECN ─────────────────────────────────────────── -->
+<div class="card" id="ip-dscp">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 16</span>
+    <span class="cn" style="color:var(--yellow)">DSCP (6 Bit) + ECN (2 Bit)</span>
+    <span class="cs">1 Byte &bull; frueher: ToS (Type of Service) &bull; heute: Differentiated Services (RFC 2474)</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Aufbau:</b> Bits 7&ndash;2 = DSCP (6 Bit, Quality of Service).
+      Bits 1&ndash;0 = ECN (2 Bit, Explicit Congestion Notification, RFC 3168).
+      Wireshark: <code>Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)</code>
+    </div>
+
+    <!-- NORMAL: DSCP-Werte -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Haeufige DSCP-Werte (RFC 2474 / RFC 4594)</h4>
+      <table>
+        <tr><th>Hex (Byte 16)</th><th>DSCP (Bits 7-2)</th><th>Klasse</th><th>Bedeutung</th><th>Typischer Traffic</th></tr>
+        <tr><td class="m">00</td><td>0 (CS0)</td><td>Best Effort</td><td>Kein QoS &rarr; STANDARD</td><td>HTTP, ICMP, normaler Datenverkehr</td></tr>
+        <tr><td class="m">20</td><td>8 (CS1)</td><td>Class Selector 1</td><td>Niedrige Prioritaet</td><td>Bulk-Transfer, Backup</td></tr>
+        <tr><td class="m">40</td><td>16 (CS2)</td><td>Class Selector 2</td><td>Mittlere Prioritaet</td><td>OAM (Operations, Admin, Mgmt)</td></tr>
+        <tr><td class="m">60</td><td>24 (CS3)</td><td>Class Selector 3</td><td>Signalisierung</td><td>Netzwerk-Signalisierung</td></tr>
+        <tr><td class="m">80</td><td>32 (CS4)</td><td>Class Selector 4</td><td>Echtzeit-Daten</td><td>Video-Streaming</td></tr>
+        <tr><td class="m">a0</td><td>40 (CS5)</td><td>Class Selector 5</td><td>Broadcast-Video</td><td>TV-Streaming</td></tr>
+        <tr><td class="m">c0</td><td>48 (CS6)</td><td>Class Selector 6</td><td>Netzwerk-Kontrolle</td><td>Routing-Protokolle (OSPF, BGP)</td></tr>
+        <tr><td class="m">e0</td><td>56 (CS7)</td><td>Class Selector 7</td><td>Hoechste Prioritaet</td><td>Reserviert / Netzwerk-Mgmt</td></tr>
+        <tr><td class="m">b8</td><td>46 (EF)</td><td>Expedited Forwarding</td><td>Niedrigste Latenz</td><td>VoIP, Echtzeit-Kommunikation</td></tr>
+        <tr><td class="m">28</td><td>10 (AF11)</td><td>Assured Forwarding 1-1</td><td>Garantierter Durchsatz</td><td>Daten-Traffic mit SLA</td></tr>
+        <tr><td class="m">48</td><td>18 (AF21)</td><td>Assured Forwarding 2-1</td><td>Mittlere Garantie</td><td>Interaktive Daten</td></tr>
+      </table>
+    </div>
+
+    <!-- NORMAL: ECN-Werte -->
+    <div class="vs vn">
+      <h4>&#9989; NORMAL &mdash; ECN-Werte (Bits 1&ndash;0, RFC 3168)</h4>
+      <table>
+        <tr><th>Bits 1-0</th><th>Hex-Maske</th><th>Bedeutung</th><th>Kontext</th></tr>
+        <tr><td class="m">00</td><td class="m">0x00</td><td>Not-ECT (Not ECN-Capable Transport)</td><td>STANDARD &rarr; kein ECN &rarr; unser ICMP-Paket</td></tr>
+        <tr><td class="m">01</td><td class="m">0x01</td><td>ECT(1) (ECN-Capable Transport)</td><td>Sender unterstuetzt ECN</td></tr>
+        <tr><td class="m">10</td><td class="m">0x02</td><td>ECT(0) (ECN-Capable Transport)</td><td>Sender unterstuetzt ECN</td></tr>
+        <tr><td class="m">11</td><td class="m">0x03</td><td>CE (Congestion Experienced)</td><td>Router hat Ueberlastung signalisiert</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete DSCP/ECN-Werte</h4>
+      <table>
+        <tr><th>Hex</th><th>DSCP</th><th>ECN</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">e0</td><td>CS7 (56)</td><td>0</td><td>Hoechste Prioritaet &rarr; unerwartet fuer normalen Traffic &rarr; QoS-Manipulation</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">b8</td><td>EF (46)</td><td>0</td><td>Expedited Forwarding bei nicht-VoIP-Traffic &rarr; QoS-Bypass-Versuch</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">03</td><td>0</td><td>CE (11)</td><td>CE ohne vorherige ECT-Aushandlung &rarr; RFC-Verletzung oder Spoofing</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">ff</td><td>63</td><td>3</td><td>Alle Bits gesetzt &rarr; ungueltige Kombination &rarr; Fuzzing</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+      <div class="note" style="margin-top:.5rem;">
+        &#9888; <b>Hinweis:</b> DSCP-Manipulation kann genutzt werden, um Traffic bevorzugt zu behandeln
+        (QoS-Bypass) oder Firewalls zu verwirren. In den meisten Netzen wird DSCP am Eingang
+        neu gesetzt (Remarking), daher ist Manipulation von aussen meist wirkungslos.
+      </div>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Standard ICMP (DSCP=0, ECN=0):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>... ... ... ... ... ... ... ... ... ... ... ... ... ... 45 <span class="hiy">00</span>
+        <span class="wsc">&#9632; Byte 16: <span style="color:var(--yellow)">00</span> = DSCP 0 (CS0/Best Effort) + ECN 00 (Not-ECT)
+&#9632; Wireshark: "Differentiated Services Field: 0x00 (DSCP: CS0, ECN: Not-ECT)"</span>
+      </div>
+      <div class="wsl">VoIP-Paket (DSCP=EF, hohe Prioritaet):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>... ... ... ... ... ... ... ... ... ... ... ... ... ... 45 <span class="hiy">b8</span>
+        <span class="wsc">&#9632; Byte 16: <span style="color:var(--yellow)">b8</span> = 1011 1000 &rarr; DSCP 46 (EF = Expedited Forwarding) + ECN 00
+&#9632; Wireshark: "Differentiated Services Field: 0xb8 (DSCP: EF, ECN: Not-ECT)"</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOTAL LENGTH ───────────────────────────────────────── -->
+<div class="card" id="ip-len">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 17&ndash;18</span>
+    <span class="cn" style="color:var(--red)">Total Length</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Gesamtgroesse IP-Header + Payload in Byte</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Berechnung:</b> Total Length = IP-Header + Transport-Header + Daten.
+      Minimum: 20 (nur IP-Header, kein Payload). Maximum: 65535 (16-Bit-Feld).
+      Wireshark: <code>Total Length: 84</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Typische Total-Length-Werte</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Paket-Typ</th><th>Berechnung</th><th>Kontext</th></tr>
+        <tr><td class="m">00 1c</td><td>28</td><td>ICMP Echo (minimal)</td><td>20 IP + 8 ICMP = 28</td><td>Ping ohne Payload</td></tr>
+        <tr><td class="m">00 54</td><td>84</td><td>ICMP Echo (Linux-Standard)</td><td>20 IP + 8 ICMP + 56 Data = 84</td><td>Linux <code>ping</code> Standard</td></tr>
+        <tr><td class="m">00 3c</td><td>60</td><td>ICMP Echo (Windows-Standard)</td><td>20 IP + 8 ICMP + 32 Data = 60</td><td>Windows <code>ping</code> Standard</td></tr>
+        <tr><td class="m">00 28</td><td>40</td><td>TCP SYN (minimal)</td><td>20 IP + 20 TCP = 40</td><td>TCP-Verbindungsaufbau ohne Optionen</td></tr>
+        <tr><td class="m">00 3c</td><td>60</td><td>TCP SYN (mit Optionen)</td><td>20 IP + 40 TCP = 60</td><td>TCP SYN mit MSS, SACK, Timestamps</td></tr>
+        <tr><td class="m">00 29</td><td>41</td><td>UDP DNS-Query</td><td>20 IP + 8 UDP + 13 DNS = 41</td><td>Einfache DNS-Anfrage</td></tr>
+        <tr><td class="m">05 dc</td><td>1500</td><td>Jumbo / MTU-Maximum</td><td>Ethernet-Standard-MTU</td><td>Maximale Groesse ohne Fragmentierung</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Total-Length-Werte</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">00 00</td><td>0</td><td>Total Length = 0 &rarr; RFC-Verletzung, kein gueltiges Paket</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">00 0a</td><td>10</td><td>Kleiner als 20 Byte &rarr; IP-Header kann nicht vollstaendig sein</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">00 14</td><td>20</td><td>Nur IP-Header, kein Payload &rarr; ungewoehnlich, aber technisch gueltig</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">ff ff</td><td>65535</td><td>Maximum &rarr; Ping of Death-Variante, Fragmentierungs-Angriff</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">&gt; MTU</td><td>&gt;1500</td><td>Groesser als MTU ohne DF-Flag &rarr; Fragmentierung &rarr; Evasion moeglich</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Angriffe ueber Total Length</h4>
+      <table>
+        <tr><th>Angriff</th><th>Total Length</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Ping of Death (historisch)</td><td class="mr">Fragmentiert &gt; 65535</td><td>Reassembliertes Paket ueberschreitet 65535 Byte &rarr; Buffer-Overflow in alten OS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Teardrop (historisch)</td><td class="mr">Ueberlappende Fragmente</td><td>Fragment-Offsets ueberlappen &rarr; Reassemblierungs-Fehler &rarr; Kernel-Crash</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>IDS-Evasion</td><td class="mr">Falsche Total Length</td><td>Total Length kleiner als tatsaechlicher Payload &rarr; IDS analysiert falschen Bereich</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (Total Length = 84):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>... ... ... ... ... ... ... ... ... ... ... ... ... ... 45 00 <span class="hil">00 54</span>
+        <span class="wsc">&#9632; Bytes 17-18: <span style="color:var(--red)">00 54</span> = 0x0054 = 84 Byte
+&#9632; 20 Byte IP-Header + 8 Byte ICMP-Header + 56 Byte Payload = 84
+&#9632; Wireshark: "Total Length: 84"</span>
+      </div>
+      <div class="wsl">Windows ping (Total Length = 60):</div>
+      <div class="wsb">
+        <span class="wo">0000&nbsp; </span>... ... ... ... ... ... ... ... ... ... ... ... ... ... 45 00 <span class="hil">00 3c</span>
+        <span class="wsc">&#9632; Bytes 17-18: <span style="color:var(--red)">00 3c</span> = 0x003c = 60 Byte
+&#9632; 20 Byte IP-Header + 8 Byte ICMP-Header + 32 Byte Payload = 60
+&#9632; Wireshark: "Total Length: 60" &rarr; OS-Fingerprinting moeglich!</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>OS-Fingerprinting:</b> Linux sendet standardmaessig 56 Byte Payload (Total 84), Windows 32 Byte (Total 60). Erkennbar in Wireshark an Total Length.</div>
+  </div>
+</div>
+
+<!-- ─── IDENTIFICATION ─────────────────────────────────────── -->
+<div class="card" id="ip-id">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 19&ndash;20</span>
+    <span class="cn" style="color:var(--cyan)">Identification (IP-ID)</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Fragment-Identifikation &bull; OS-Fingerprinting-Quelle</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Zweck:</b> Identifiziert zusammengehoerende IP-Fragmente (RFC 791).
+      Alle Fragmente eines Pakets tragen dieselbe IP-ID.
+      Bei nicht-fragmentierten Paketen: Wert ist OS-abhaengig (zufaellig oder inkrementell).
+      Wireshark: <code>Identification: 0x3bf5 (15349)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; OS-abhaengiges IP-ID-Verhalten</h4>
+      <table>
+        <tr><th>Betriebssystem</th><th>IP-ID-Verhalten</th><th>Beispiel</th><th>Erkennbarkeit</th></tr>
+        <tr><td>Linux (modern, &ge; 3.x)</td><td>Zufaellig (PRNG) bei nicht-fragmentierten Paketen</td><td class="m">3b f5, 7a 12, c4 89</td><td>Kein Muster erkennbar</td></tr>
+        <tr><td>Linux (aelt, &lt; 3.x)</td><td>Inkrementell global</td><td class="m">00 01, 00 02, 00 03</td><td>Vorhersagbar &rarr; Fingerprinting</td></tr>
+        <tr><td>Windows (modern)</td><td>Zufaellig</td><td class="m">ab cd, 12 34, fe 01</td><td>Kein Muster erkennbar</td></tr>
+        <tr><td>Windows (aelt, XP/2003)</td><td>Inkrementell global</td><td class="m">00 01, 00 02, 00 03</td><td>Vorhersagbar</td></tr>
+        <tr><td>Cisco IOS</td><td>Inkrementell per Flow</td><td class="m">00 01, 00 02 (pro Ziel)</td><td>Erkennbar bei mehreren Paketen</td></tr>
+        <tr><td>Nicht-fragmentiert (RFC)</td><td>Sollte 0x0000 sein (RFC 6864)</td><td class="m">00 00</td><td>RFC 6864 empfiehlt 0 bei DF=1</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige IP-ID-Muster</h4>
+      <table>
+        <tr><th>Muster</th><th>Beispiel</th><th>Bedeutung</th><th>Risiko</th></tr>
+        <tr><td>Immer 0x0000</td><td class="my">00 00</td><td>Kein Fragmentierungs-Bedarf (DF=1) &rarr; RFC 6864-konform, aber pruefe DF-Flag</td><td><span class="r rok">OK</span></td></tr>
+        <tr><td>Immer gleicher Wert</td><td class="my">ab cd ab cd</td><td>Statisch &rarr; fehlerhafte Implementierung oder Replay-Angriff</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Streng inkrementell</td><td class="my">00 01, 00 02, 00 03</td><td>Vorhersagbar &rarr; IP-ID-basiertes Fingerprinting / Idle Scan moeglich</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>0xffff</td><td class="my">ff ff</td><td>Maximum &rarr; ungewoehnlich, pruefe Kontext</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>Gleiche ID, verschiedene Src</td><td class="my">Gleiche IP-ID von 2 IPs</td><td>Spoofing-Indikator &rarr; gefaelschte Source-IP</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; IP-ID-basierte Angriffe</h4>
+      <table>
+        <tr><th>Angriff</th><th>Voraussetzung</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Idle Scan (nmap -sI)</td><td class="mr">Inkrementelle IP-ID beim Zombie-Host</td><td>Angreifer nutzt IP-ID-Zaehler eines Zombie-Hosts, um Ports des Ziels zu scannen &rarr; komplett anonym</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>IP-ID-Fingerprinting</td><td class="mr">Inkrementelle IP-ID</td><td>OS-Typ und Aktivitaet des Hosts erkennbar durch IP-ID-Muster</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Fragment-Reassembly-Angriff</td><td class="mr">Gleiche IP-ID, verschiedene Fragmente</td><td>Angreifer injiziert Fragmente mit gleicher IP-ID &rarr; Reassemblierung wird manipuliert</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (zufaellige IP-ID):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span><span class="hil">00 54</span> <span class="hii">3b f5</span> <span class="hif">40 00</span> <span class="hit">40</span> <span class="hio">01</span> <span class="hik">xx xx</span> <span class="his">c0 a8 01 01</span> <span class="hid">c0 a8 01 64</span>
+        <span class="wsc">&#9632; Bytes 19-20: <span style="color:var(--cyan)">3b f5</span> = 0x3BF5 = 15349 (zufaellig, Linux-Kernel)
+&#9632; Wireshark: "Identification: 0x3bf5 (15349)"</span>
+      </div>
+      <div class="wsl">Inkrementelle IP-ID (aelteres OS / Fingerprinting-Ziel):</div>
+      <div class="wsb">
+        Paket 1: <span class="hii">00 01</span> &nbsp; Paket 2: <span class="hii">00 02</span> &nbsp; Paket 3: <span class="hii">00 03</span>
+        <span class="wsc">&#9632; Streng inkrementell &rarr; OS-Fingerprinting moeglich, Idle-Scan-Zombie nutzbar</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.id == 0x0000</code> findet Pakete mit IP-ID 0 (RFC 6864 bei DF=1 empfohlen).</div>
+  </div>
+</div>
+
+<!-- ─── FLAGS + FRAGMENT OFFSET ──────────────────────────── -->
+<div class="card" id="ip-flags">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 21&ndash;22</span>
+    <span class="cn" style="color:var(--pink)">Flags (3 Bit) + Fragment Offset (13 Bit)</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Bit 15-13 = Flags &bull; Bit 12-0 = Fragment-Offset in 8-Byte-Einheiten</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Aufbau (16 Bit):</b>
+      Bit 15 = Reserved (immer 0) &bull;
+      Bit 14 = DF (Don't Fragment) &bull;
+      Bit 13 = MF (More Fragments) &bull;
+      Bits 12-0 = Fragment Offset (Position dieses Fragments in 8-Byte-Einheiten).
+      Wireshark: <code>Flags: 0x4000, Don't fragment</code>
+    </div>
+
+    <!-- NORMAL: Flag-Kombinationen -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Gueltge Flag-Kombinationen</h4>
+      <table>
+        <tr><th>Hex (Bytes 21-22)</th><th>Binaer (16 Bit)</th><th>Flags</th><th>Offset</th><th>Bedeutung</th></tr>
+        <tr><td class="m">40 00</td><td class="m">0100 0000 0000 0000</td><td>DF=1, MF=0</td><td>0</td><td>Nicht fragmentiert, kein weiteres Fragment &rarr; STANDARD (Linux/Windows ping)</td></tr>
+        <tr><td class="m">00 00</td><td class="m">0000 0000 0000 0000</td><td>DF=0, MF=0</td><td>0</td><td>Fragmentierung erlaubt, letztes (oder einziges) Fragment</td></tr>
+        <tr><td class="m">20 00</td><td class="m">0010 0000 0000 0000</td><td>DF=0, MF=1</td><td>0</td><td>Erstes Fragment (Offset=0, MF=1 = weitere Fragmente folgen)</td></tr>
+        <tr><td class="m">20 B5</td><td class="m">0010 0000 1011 0101</td><td>DF=0, MF=1</td><td>181</td><td>Mittleres Fragment (Offset=181 &times; 8 = 1448 Byte)</td></tr>
+        <tr><td class="m">00 B5</td><td class="m">0000 0000 1011 0101</td><td>DF=0, MF=0</td><td>181</td><td>Letztes Fragment (MF=0, Offset &gt; 0)</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Merkhilfe:</b> DF=1 bedeutet &ldquo;Bitte nicht fragmentieren&rdquo;.
+        Wenn ein Router das Paket trotzdem fragmentieren muesste, sendet er ein ICMP Type 3 Code 4
+        (Fragmentation Needed) zurueck. MF=1 bedeutet &ldquo;Weitere Fragmente folgen&rdquo;.
+        Letztes Fragment: MF=0 und Offset &gt; 0.
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Flag/Offset-Kombinationen</h4>
+      <table>
+        <tr><th>Hex</th><th>Flags</th><th>Offset</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">60 00</td><td>DF=1, MF=1</td><td>0</td><td>DF=1 und MF=1 gleichzeitig &rarr; RFC-Verletzung! Widerspruch: nicht fragmentieren, aber mehr Fragmente?</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">80 00</td><td>Reserved=1</td><td>0</td><td>Reserved-Bit gesetzt &rarr; RFC 791: muss 0 sein &rarr; Fuzzing oder Exploit (RFC 3514: "Evil Bit")</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">40 01</td><td>DF=1</td><td>1</td><td>DF=1 und Offset &gt; 0 &rarr; RFC-Verletzung! Nicht-erstes Fragment darf nicht DF=1 haben</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">20 01</td><td>MF=1</td><td>1</td><td>Sehr kleiner Offset &rarr; Tiny Fragment Angriff moeglich</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Fragmentierungs-Angriffe</h4>
+      <table>
+        <tr><th>Angriff</th><th>Flags/Offset</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Tiny Fragment Attack</td><td class="mr">MF=1, Offset=0, sehr kleines Paket</td><td>Erster Fragment so klein, dass TCP-Header aufgeteilt wird &rarr; Firewall sieht Flags nicht &rarr; ACL-Umgehung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Teardrop Attack</td><td class="mr">Ueberlappende Offsets</td><td>Fragment-Offsets ueberlappen &rarr; Reassemblierungs-Fehler &rarr; Kernel-Crash (historisch)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Fragment Flooding</td><td class="mr">MF=1, kein letztes Fragment</td><td>Viele Fragmente ohne abschliessendes Fragment &rarr; Reassemblierungs-Buffer erschoepft &rarr; DoS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>IDS-Evasion</td><td class="mr">Fragmentierter Payload</td><td>Angriffs-Payload ueber mehrere Fragmente verteilt &rarr; IDS analysiert nur erstes Fragment</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Ping of Death</td><td class="mr">Fragmente ergeben &gt; 65535 Byte</td><td>Reassembliertes Paket ueberschreitet 65535 Byte &rarr; Buffer-Overflow (historisch, gepacht)</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (DF=1, nicht fragmentiert):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 <span class="hif">40 00</span> <span class="hit">40</span> <span class="hio">01</span> xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Bytes 21-22: <span style="color:var(--pink)">40 00</span> = 0100 0000 0000 0000
+&#9632; Bit 14 (DF) = 1, Bit 13 (MF) = 0, Offset = 0 &rarr; Wireshark: "Flags: 0x4000, Don't fragment"</span>
+      </div>
+      <div class="wsl">Erstes Fragment (MF=1, Offset=0):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>05 dc 1a 2b <span class="hif">20 00</span> 40 01 xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Bytes 21-22: <span style="color:var(--pink)">20 00</span> = 0010 0000 0000 0000 &rarr; MF=1, Offset=0
+&#9632; Wireshark: "Flags: 0x2000, More fragments" &rarr; weitere Fragmente folgen</span>
+      </div>
+      <div class="wsl">RFC-Verletzung (DF=1 + MF=1 gleichzeitig &rarr; Fuzzing):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 <span class="hbad">60 00</span> 40 01 xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Bytes 21-22: <span style="color:var(--red)">60 00</span> = 0110 0000 0000 0000 &rarr; DF=1 UND MF=1 &rarr; RFC-Verletzung!
+&#9632; Wireshark: Malformed Packet / Expert Info: "Bogus IP flags"</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.flags.mf == 1</code> findet alle Fragmente. <code>ip.frag_offset &gt; 0</code> findet nicht-erste Fragmente.</div>
+  </div>
+</div>
+
+<!-- ─── TTL ────────────────────────────────────────────────── -->
+<div class="card" id="ip-ttl">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 23</span>
+    <span class="cn" style="color:var(--teal)">Time to Live (TTL)</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Hop-Zaehler &bull; OS-Fingerprinting-Quelle &bull; Jeder Router dekrementiert um 1</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Verhindert endlose Routing-Schleifen (RFC 791).
+      Jeder Router dekrementiert TTL um 1. Bei TTL=0 wird das Paket verworfen und ein
+      ICMP Type 11 (Time Exceeded) zurueckgesendet.
+      Wireshark: <code>Time to Live: 64</code>
+    </div>
+
+    <!-- NORMAL: OS-Fingerprinting -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Standard-TTL-Werte nach Betriebssystem (Ausgangswert)</h4>
+      <table>
+        <tr><th>TTL (hex)</th><th>TTL (dez)</th><th>Betriebssystem / Geraet</th><th>Hinweis</th></tr>
+        <tr><td class="m">40</td><td>64</td><td>Linux (alle Versionen), macOS, FreeBSD, Android, iOS</td><td>STANDARD fuer Unix-artige Systeme</td></tr>
+        <tr><td class="m">80</td><td>128</td><td>Windows (alle Versionen seit NT)</td><td>STANDARD fuer Windows</td></tr>
+        <tr><td class="m">ff</td><td>255</td><td>Cisco IOS, Solaris, AIX, HP-UX, Juniper JunOS</td><td>STANDARD fuer Netzwerk-Geraete und alte Unix-Systeme</td></tr>
+        <tr><td class="m">7e</td><td>126</td><td>Windows (nach 2 Hops)</td><td>128 - 2 Hops = 126 &rarr; 2 Router zwischen Sender und Sniffer</td></tr>
+        <tr><td class="m">3e</td><td>62</td><td>Linux (nach 2 Hops)</td><td>64 - 2 Hops = 62</td></tr>
+        <tr><td class="m">fd</td><td>253</td><td>Cisco (nach 2 Hops)</td><td>255 - 2 Hops = 253</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>OS-Fingerprinting:</b> Empfangener TTL-Wert + Anzahl der Hops = Ausgangs-TTL.
+        Naechste Standard-TTL (64, 128, 255) bestimmt das OS.
+        Beispiel: TTL=62 &rarr; 64 - 62 = 2 Hops &rarr; Linux-System 2 Router entfernt.
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige TTL-Werte</h4>
+      <table>
+        <tr><th>TTL (hex)</th><th>TTL (dez)</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">01</td><td>1</td><td>TTL=1 &rarr; Paket wird am naechsten Router verworfen &rarr; Traceroute-Technik oder Angriff</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">00</td><td>0</td><td>TTL=0 &rarr; RFC-Verletzung! Paket haette bereits verworfen werden muessen</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">ff</td><td>255</td><td>TTL=255 von einem normalen Host &rarr; Cisco/Solaris oder TTL-Spoofing</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">01&ndash;0a</td><td>1&ndash;10</td><td>Sehr niedriger TTL &rarr; Paket kommt von weit weg oder TTL wurde manipuliert</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Wechselnd</td><td>variabel</td><td>TTL aendert sich zwischen Paketen desselben Flows &rarr; Spoofing oder Routing-Anomalie</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; TTL-basierte Angriffe</h4>
+      <table>
+        <tr><th>Angriff</th><th>TTL-Wert</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>TTL-basierte IDS-Evasion</td><td class="mr">Niedriger TTL</td><td>Angreifer sendet Paket mit TTL, das gerade bis zum Ziel reicht, aber IDS ueberspringt &rarr; IDS sieht Paket, Ziel nicht (oder umgekehrt)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>TTL-Spoofing</td><td class="mr">Unpassender TTL</td><td>TTL passt nicht zum angeblichen Quell-OS &rarr; IP-Spoofing-Indikator</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Traceroute / Recon</td><td class="mr">1, 2, 3, ...</td><td>Inkrementelle TTL-Werte &rarr; Netzwerk-Topologie-Aufklaerung</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>ICMP Time Exceeded Flood</td><td class="mr">TTL=1 Flood</td><td>Massenhaft TTL=1-Pakete &rarr; Router sendet ICMP Time Exceeded &rarr; Amplification-DoS</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (TTL=64):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 <span class="hit">40</span> <span class="hio">01</span> xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Byte 23: <span style="color:var(--teal)">40</span> = 0x40 = 64 &rarr; Linux-Standard-TTL
+&#9632; Wireshark: "Time to Live: 64" &rarr; OS-Fingerprint: Linux/macOS/Android</span>
+      </div>
+      <div class="wsl">Windows ping (TTL=128):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 3c ab cd 40 00 <span class="hit">80</span> <span class="hio">01</span> xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Byte 23: <span style="color:var(--teal)">80</span> = 0x80 = 128 &rarr; Windows-Standard-TTL
+&#9632; Wireshark: "Time to Live: 128" &rarr; OS-Fingerprint: Windows</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.ttl &lt; 10</code> findet Pakete mit sehr niedrigem TTL &rarr; Traceroute oder Angriff. <code>ip.ttl == 0</code> findet RFC-Verletzungen.</div>
+  </div>
+</div>
+
+<!-- ─── PROTOCOL ───────────────────────────────────────────── -->
+<div class="card" id="ip-proto">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 24</span>
+    <span class="cn" style="color:var(--orange)">Protocol</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Identifiziert das Transport-Protokoll im IP-Payload (IANA-Nummern)</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Gibt an, welches Protokoll im IP-Payload steckt (IANA Protocol Numbers).
+      Wireshark nutzt diesen Wert, um den naechsten Layer zu dekodieren.
+      Wireshark: <code>Protocol: ICMP (1)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Haeufige Protokoll-Nummern (IANA)</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Protokoll</th><th>RFC</th><th>Kontext</th></tr>
+        <tr><td class="m">01</td><td>1</td><td>ICMP</td><td>RFC 792</td><td>Ping, Traceroute, Fehlermeldungen &rarr; unser Paket</td></tr>
+        <tr><td class="m">02</td><td>2</td><td>IGMP</td><td>RFC 1112</td><td>Multicast-Gruppen-Verwaltung</td></tr>
+        <tr><td class="m">06</td><td>6</td><td>TCP</td><td>RFC 793</td><td>HTTP, HTTPS, SSH, FTP &rarr; verbindungsorientiert</td></tr>
+        <tr><td class="m">11</td><td>17</td><td>UDP</td><td>RFC 768</td><td>DNS, DHCP, NTP, SNMP &rarr; verbindungslos</td></tr>
+        <tr><td class="m">29</td><td>41</td><td>IPv6 in IPv4</td><td>RFC 2473</td><td>IPv6-Tunnel (6in4)</td></tr>
+        <tr><td class="m">2f</td><td>47</td><td>GRE</td><td>RFC 2784</td><td>Generic Routing Encapsulation &rarr; VPN-Tunnel</td></tr>
+        <tr><td class="m">32</td><td>50</td><td>ESP</td><td>RFC 4303</td><td>IPsec Encrypted Payload</td></tr>
+        <tr><td class="m">33</td><td>51</td><td>AH</td><td>RFC 4302</td><td>IPsec Authentication Header</td></tr>
+        <tr><td class="m">3a</td><td>58</td><td>ICMPv6</td><td>RFC 4443</td><td>ICMP fuer IPv6</td></tr>
+        <tr><td class="m">59</td><td>89</td><td>OSPF</td><td>RFC 2328</td><td>Open Shortest Path First &rarr; Routing-Protokoll</td></tr>
+        <tr><td class="m">67</td><td>103</td><td>PIM</td><td>RFC 7761</td><td>Protocol Independent Multicast</td></tr>
+        <tr><td class="m">73</td><td>115</td><td>L2TP</td><td>RFC 3931</td><td>Layer 2 Tunneling Protocol</td></tr>
+        <tr><td class="m">84</td><td>132</td><td>SCTP</td><td>RFC 4960</td><td>Stream Control Transmission Protocol</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete Protokoll-Nummern</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Protokoll</th><th>Warum verdaechtig</th><th>Risiko</th></tr>
+        <tr><td class="my">00</td><td>0</td><td>HOPOPT</td><td>IPv6 Hop-by-Hop Options in IPv4 &rarr; RFC-Verletzung oder Tunnel-Verdacht</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">04</td><td>4</td><td>IP-in-IP</td><td>Getunneltes IP &rarr; Firewall-Umgehung moeglich</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">3d</td><td>61</td><td>Any Host Internal</td><td>Reserviert, sollte nicht im Netz auftauchen</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">fd</td><td>253</td><td>Experimentation</td><td>RFC 3692: nur fuer Experimente &rarr; im Produktivnetz verdaechtig</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">fe</td><td>254</td><td>Experimentation</td><td>RFC 3692: nur fuer Experimente &rarr; im Produktivnetz verdaechtig</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">ff</td><td>255</td><td>Reserved</td><td>Reserviert, nie gueltig &rarr; Fuzzing</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">ICMP-Paket (Protocol=1):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 40 <span class="hio">01</span> xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Byte 24: <span style="color:var(--orange)">01</span> = 0x01 = 1 = ICMP &rarr; Wireshark: "Protocol: ICMP (1)"
+&#9632; Wireshark dekodiert den naechsten Layer automatisch als ICMP</span>
+      </div>
+      <div class="wsl">TCP-Paket (Protocol=6):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 3c ab cd 40 00 40 <span class="hio">06</span> xx xx c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Byte 24: <span style="color:var(--orange)">06</span> = 0x06 = 6 = TCP &rarr; Wireshark: "Protocol: TCP (6)"</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.proto == 1</code> = ICMP, <code>ip.proto == 6</code> = TCP, <code>ip.proto == 17</code> = UDP.</div>
+  </div>
+</div>
+
+<!-- ─── IP HEADER CHECKSUM ────────────────────────────────── -->
+<div class="card" id="ip-cksum">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 25&ndash;26</span>
+    <span class="cn" style="color:var(--blue)">Header Checksum</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Ones-Complement-Pruefsumme &bull; nur ueber IP-Header (nicht Payload!)</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Berechnung (RFC 791):</b> 16-Bit-Ones-Complement-Summe aller 16-Bit-Woerter des IP-Headers
+      (mit Checksum-Feld = 0x0000). Ergebnis wird bitweise invertiert.
+      Jeder Router muss die Checksum neu berechnen (TTL aendert sich).
+      Wireshark: <code>Header Checksum: 0xb861 [correct]</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Checksum-Verhalten</h4>
+      <table>
+        <tr><th>Situation</th><th>Wireshark-Anzeige</th><th>Bedeutung</th></tr>
+        <tr><td>Korrekte Checksum</td><td class="mg">Header Checksum: 0xXXXX [correct]</td><td>Paket wurde nicht korrumpiert &rarr; STANDARD</td></tr>
+        <tr><td>Checksum Offloading (NIC)</td><td class="my">Header Checksum: 0x0000 [unverified]</td><td>NIC berechnet Checksum in Hardware &rarr; Wireshark sieht 0x0000 bei lokal gesendeten Paketen &rarr; NORMAL auf Loopback/eigener NIC</td></tr>
+        <tr><td>Falsche Checksum</td><td class="mr">Header Checksum: 0xXXXX [incorrect, should be 0xYYYY]</td><td>Bit-Fehler, Manipulation oder Checksum-Offloading-Artefakt</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Checksum Offloading:</b> Moderne NICs berechnen die Checksum in Hardware, nachdem
+        Wireshark den Frame bereits kopiert hat. Deshalb zeigt Wireshark bei lokal generierten
+        Paketen oft 0x0000 oder eine falsche Checksum &rarr; kein Fehler!
+        Einstellbar unter: Edit &rarr; Preferences &rarr; Protocols &rarr; IPv4 &rarr; "Validate the IPv4 checksum if possible"
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG / GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Falsche Checksum als Angriffs-Indikator</h4>
+      <table>
+        <tr><th>Situation</th><th>Hex</th><th>Bedeutung</th><th>Risiko</th></tr>
+        <tr><td>Falsche Checksum im Netz</td><td class="mr">0x0000 (nicht Offloading)</td><td>Paket wurde nach dem Senden manipuliert &rarr; MITM oder Bit-Flip</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Checksum-Manipulation</td><td class="mr">Beliebiger falscher Wert</td><td>Angreifer aendert Paket-Inhalt ohne Checksum zu aktualisieren &rarr; Manipulation erkennbar</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Checksum = 0xFFFF</td><td class="mr">ff ff</td><td>Ones-Complement von 0x0000 &rarr; ungewoehnlich, pruefe Header-Inhalt</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Korrekte Checksum (empfangenes Paket):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 40 01 <span class="hik">b8 61</span> c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Bytes 25-26: <span style="color:var(--blue)">b8 61</span> = 0xB861 &rarr; Wireshark: "Header Checksum: 0xb861 [correct]"</span>
+      </div>
+      <div class="wsl">Checksum Offloading (lokal gesendetes Paket &rarr; normal):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 40 01 <span class="hiy">00 00</span> c0 a8 01 01 c0 a8 01 64
+        <span class="wsc">&#9632; Bytes 25-26: <span style="color:var(--yellow)">00 00</span> = Checksum Offloading &rarr; NIC berechnet spaeter
+&#9632; Wireshark: "Header Checksum: 0x0000 [unverified]" &rarr; KEIN Fehler bei eigenen Paketen</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.checksum_bad == 1</code> findet alle Pakete mit falscher IP-Header-Checksum (nach Aktivierung der Checksum-Validierung).</div>
+  </div>
+</div>
+
+<!-- ─── SOURCE IP ──────────────────────────────────────────── -->
+<div class="card" id="ip-src">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 27&ndash;30</span>
+    <span class="cn" style="color:var(--green)">Source IP Address</span>
+    <span class="cs">4 Byte &bull; 32 Bit &bull; Big-Endian &bull; IP-Adresse des Senders &bull; faelschbar (IP Spoofing)</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Wichtig:</b> Die Source-IP ist bei UDP und ICMP trivial faelschbar (IP Spoofing).
+      Bei TCP ist Spoofing schwieriger (3-Way-Handshake), aber moeglich.
+      Wireshark: <code>Source Address: 192.168.1.1</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; RFC 1918 Private Adressbereiche und spezielle Adressen</h4>
+      <table>
+        <tr><th>Bereich</th><th>Hex (Anfang)</th><th>CIDR</th><th>Klasse</th><th>Kontext</th></tr>
+        <tr><td class="m">10.0.0.0 &ndash; 10.255.255.255</td><td class="m">0a 00 00 00</td><td>/8</td><td>Privat A</td><td>Grosse Unternehmensnetze, VPNs</td></tr>
+        <tr><td class="m">172.16.0.0 &ndash; 172.31.255.255</td><td class="m">ac 10 00 00</td><td>/12</td><td>Privat B</td><td>Mittlere Netze, Docker (172.17.x.x)</td></tr>
+        <tr><td class="m">192.168.0.0 &ndash; 192.168.255.255</td><td class="m">c0 a8 00 00</td><td>/16</td><td>Privat C</td><td>Heimnetz, Lab &rarr; dein Kali-Lab</td></tr>
+        <tr><td class="m">127.0.0.0 &ndash; 127.255.255.255</td><td class="m">7f 00 00 00</td><td>/8</td><td>Loopback</td><td>Lokaler Host (127.0.0.1 = localhost)</td></tr>
+        <tr><td class="m">169.254.0.0 &ndash; 169.254.255.255</td><td class="m">a9 fe 00 00</td><td>/16</td><td>Link-Local</td><td>APIPA (kein DHCP-Server erreichbar)</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Source-IPs</h4>
+      <table>
+        <tr><th>Adresse / Bereich</th><th>Hex</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">0.0.0.0</td><td class="my">00 00 00 00</td><td>Unspezifizierte Adresse &rarr; nur bei DHCP-Discover gueltig, sonst RFC-Verletzung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">255.255.255.255</td><td class="my">ff ff ff ff</td><td>Limited Broadcast als Source &rarr; RFC-Verletzung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">Eigene Broadcast-Adresse</td><td class="my">z.B. c0 a8 01 ff</td><td>Netz-Broadcast als Source &rarr; RFC-Verletzung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">224.0.0.0/4</td><td class="my">e0 xx xx xx</td><td>Multicast als Source &rarr; RFC-Verletzung</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">Externe IP von intern</td><td class="my">Oeffentliche IP</td><td>Paket aus internem Netz mit oeffentlicher Source-IP &rarr; IP-Spoofing-Indikator</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">Interne IP von extern</td><td class="my">RFC 1918 IP</td><td>Paket von aussen mit privater Source-IP &rarr; Spoofing (sollte von Firewall geblockt werden)</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping von 192.168.1.1 nach 192.168.1.100:</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 40 01 b8 61 <span class="his">c0 a8 01 01</span> <span class="hid">c0 a8 01 64</span>
+        <span class="wsc">&#9632; Bytes 27-30: <span style="color:var(--green)">c0 a8 01 01</span> = 192.168.1.1 (Src) &rarr; Wireshark: "Source Address: 192.168.1.1"
+&#9632; Bytes 31-34: <span style="color:var(--purple)">c0 a8 01 64</span> = 192.168.1.100 (Dst) &rarr; Wireshark: "Destination Address: 192.168.1.100"</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.src == 192.168.1.1</code> filtert nach Source-IP. <code>ip.src_host == "192.168.1.1"</code> loest den Hostnamen auf.</div>
+  </div>
+</div>
+
+<!-- ─── DESTINATION IP ─────────────────────────────────────── -->
+<div class="card" id="ip-dst">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 31&ndash;34</span>
+    <span class="cn" style="color:var(--purple)">Destination IP Address</span>
+    <span class="cs">4 Byte &bull; 32 Bit &bull; Big-Endian &bull; IP-Adresse des Empfaengers</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Bestimmt das Routing-Ziel. Router leiten das Paket anhand dieser Adresse weiter.
+      Wireshark: <code>Destination Address: 192.168.1.100</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Spezielle Zieladressen</h4>
+      <table>
+        <tr><th>Adresse</th><th>Hex</th><th>Bedeutung</th><th>Kontext</th></tr>
+        <tr><td class="m">192.168.x.x</td><td class="m">c0 a8 xx xx</td><td>Privates Netz (RFC 1918)</td><td>Standard-LAN-Traffic</td></tr>
+        <tr><td class="m">10.x.x.x</td><td class="m">0a xx xx xx</td><td>Privates Netz (RFC 1918)</td><td>Unternehmens-LAN, VPN</td></tr>
+        <tr><td class="m">127.0.0.1</td><td class="m">7f 00 00 01</td><td>Loopback</td><td>Lokale Dienste testen</td></tr>
+        <tr><td class="m">255.255.255.255</td><td class="m">ff ff ff ff</td><td>Limited Broadcast</td><td>DHCP-Discover, NetBIOS &rarr; normal</td></tr>
+        <tr><td class="m">192.168.1.255</td><td class="m">c0 a8 01 ff</td><td>Directed Broadcast /24</td><td>Alle Hosts im Subnetz &rarr; Smurf-Angriff moeglich</td></tr>
+        <tr><td class="m">224.0.0.1</td><td class="m">e0 00 00 01</td><td>All Hosts Multicast</td><td>Alle Multicast-faehigen Hosts</td></tr>
+        <tr><td class="m">224.0.0.2</td><td class="m">e0 00 00 02</td><td>All Routers Multicast</td><td>Alle Router im Segment</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Zieladressen</h4>
+      <table>
+        <tr><th>Adresse</th><th>Hex</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">0.0.0.0</td><td class="my">00 00 00 00</td><td>Unspezifiziert als Ziel &rarr; RFC-Verletzung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">Directed Broadcast</td><td class="my">x.x.x.ff</td><td>Smurf-Angriff: ICMP an Broadcast &rarr; alle Hosts antworten &rarr; Amplification-DoS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">Eigene IP als Ziel</td><td class="my">Src IP = Dst IP</td><td>Land-Angriff: Paket an sich selbst &rarr; DoS durch Verarbeitungsschleife (historisch)</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">240.0.0.0/4</td><td class="my">f0 xx xx xx</td><td>Reservierter Bereich (RFC 1112) &rarr; sollte nicht geroutet werden</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normaler Ping (Src 192.168.1.1 &rarr; Dst 192.168.1.100):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 54 3b f5 40 00 40 01 b8 61 <span class="his">c0 a8 01 01</span> <span class="hid">c0 a8 01 64</span>
+        <span class="wsc">&#9632; Bytes 31-34: <span style="color:var(--purple)">c0 a8 01 64</span> = 192.168.1.100 &rarr; Wireshark: "Destination Address: 192.168.1.100"</span>
+      </div>
+      <div class="wsl">Smurf-Angriff (Ziel = Directed Broadcast):</div>
+      <div class="wsb">
+        <span class="wo">0010&nbsp; </span>00 1c 3b f5 00 00 40 01 xx xx <span class="hbad">0a 00 00 01</span> <span class="hbad">0a 00 00 ff</span>
+        <span class="wsc">&#9632; Bytes 31-34: <span style="color:var(--red)">0a 00 00 ff</span> = 10.0.0.255 = Directed Broadcast
+&#9632; ICMP Echo Request an Broadcast &rarr; alle Hosts antworten &rarr; Amplification-DoS gegen Src-IP</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>ip.dst == 255.255.255.255</code> = Limited Broadcast. <code>ip.src == ip.dst</code> = Land-Angriff.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     ICMP HEADER
+     ════════════════════════════════════════════════════════════ -->
+<div class="layer-head" id="icmp">
+  <span class="lh-badge" style="background:var(--orange)">Layer 3 &ndash; ICMP</span>
+  <span class="lh-title">Internet Control Message Protocol &mdash; Bytes 35&ndash;42+</span>
+  <span class="lh-sub">RFC 792 &bull; Kein Transport-Protokoll! ICMP ist Teil von IP (Protocol=1) &bull; Kein Port-Konzept &bull; Wird von Routern und Hosts fuer Fehlermeldungen und Diagnose genutzt</span>
+</div>
+
+<!-- ─── ICMP TYPE ──────────────────────────────────────────── -->
+<div class="card" id="icmp-type">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 35</span>
+    <span class="cn" style="color:var(--orange)">ICMP Type</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Bestimmt die Kategorie der ICMP-Nachricht &bull; Zusammen mit Code eindeutig</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Der Type-Wert bestimmt, was diese ICMP-Nachricht bedeutet.
+      Der Code-Wert (Byte 36) praezisiert den Type weiter.
+      Wireshark: <code>Type: 8 (Echo (ping) request)</code>
+    </div>
+
+    <!-- NORMAL: Alle wichtigen ICMP-Types -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Wichtige ICMP-Type-Werte (RFC 792 + Erweiterungen)</h4>
+      <table>
+        <tr><th>Hex</th><th>Dez</th><th>Name</th><th>RFC</th><th>Richtung</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00</td><td>0</td><td>Echo Reply</td><td>RFC 792</td><td>Antwort</td><td>Antwort auf Ping (Type 8) &rarr; Ziel ist erreichbar</td></tr>
+        <tr><td class="m">03</td><td>3</td><td>Destination Unreachable</td><td>RFC 792</td><td>Fehlermeldung</td><td>Ziel nicht erreichbar &rarr; Code gibt Grund an (0-15)</td></tr>
+        <tr><td class="m">04</td><td>4</td><td>Source Quench</td><td>RFC 792</td><td>Flusskontrolle</td><td>Veraltet (RFC 6633 deprecated): Sender soll langsamer werden</td></tr>
+        <tr><td class="m">05</td><td>5</td><td>Redirect</td><td>RFC 792</td><td>Routing</td><td>Router teilt Host bessere Route mit &rarr; Missbrauch moeglich!</td></tr>
+        <tr><td class="m">08</td><td>8</td><td>Echo Request</td><td>RFC 792</td><td>Anfrage</td><td>Ping-Anfrage &rarr; unser Paket</td></tr>
+        <tr><td class="m">09</td><td>9</td><td>Router Advertisement</td><td>RFC 1256</td><td>Routing</td><td>Router kuendigt sich an</td></tr>
+        <tr><td class="m">0a</td><td>10</td><td>Router Solicitation</td><td>RFC 1256</td><td>Routing</td><td>Host sucht Router</td></tr>
+        <tr><td class="m">0b</td><td>11</td><td>Time Exceeded</td><td>RFC 792</td><td>Fehlermeldung</td><td>TTL=0 (Code 0) oder Fragment-Reassemblierung Timeout (Code 1)</td></tr>
+        <tr><td class="m">0c</td><td>12</td><td>Parameter Problem</td><td>RFC 792</td><td>Fehlermeldung</td><td>Fehler im IP-Header &rarr; Pointer zeigt auf fehlerhaftes Byte</td></tr>
+        <tr><td class="m">0d</td><td>13</td><td>Timestamp Request</td><td>RFC 792</td><td>Anfrage</td><td>Zeitstempel-Anfrage (fuer Zeitsynchronisation)</td></tr>
+        <tr><td class="m">0e</td><td>14</td><td>Timestamp Reply</td><td>RFC 792</td><td>Antwort</td><td>Antwort auf Timestamp Request</td></tr>
+        <tr><td class="m">11</td><td>17</td><td>Address Mask Request</td><td>RFC 950</td><td>Anfrage</td><td>Subnetzmaske anfragen (veraltet)</td></tr>
+        <tr><td class="m">12</td><td>18</td><td>Address Mask Reply</td><td>RFC 950</td><td>Antwort</td><td>Subnetzmaske antworten (veraltet)</td></tr>
+        <tr><td class="m">1e</td><td>30</td><td>Traceroute</td><td>RFC 1393</td><td>Info</td><td>Traceroute-Information (veraltet, selten)</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige ICMP-Types</h4>
+      <table>
+        <tr><th>Hex</th><th>Dez</th><th>Name</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">05</td><td>5</td><td>Redirect</td><td>Angreifer sendet gefaelschten Redirect &rarr; Host aendert Routing-Tabelle &rarr; Traffic-Umleitung (MITM)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">09</td><td>9</td><td>Router Advertisement</td><td>Gefaelschte Router-Ankuendigung &rarr; Host nutzt Angreifer als Default-Gateway &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">1f&ndash;ff</td><td>31&ndash;255</td><td>Unbekannt/Reserviert</td><td>Nicht standardisierte Types &rarr; Fuzzing, Exploit-Versuche oder Covert-Channel</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">08</td><td>8</td><td>Echo Request (Flood)</td><td>Massenhaft Echo Requests &rarr; Ping-Flood-DoS oder Smurf-Amplification</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">00</td><td>0</td><td>Echo Reply (unsolicitiert)</td><td>Echo Reply ohne vorherigen Request &rarr; Spoofing oder Covert-Channel (ICMP-Tunnel)</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; ICMP-basierte Angriffe</h4>
+      <table>
+        <tr><th>Angriff</th><th>Type/Code</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Ping Flood (DoS)</td><td class="mr">Type 8 (Flood)</td><td>Massenhaft Echo Requests &rarr; Ziel mit Antworten ueberlastet</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Smurf Attack</td><td class="mr">Type 8, Dst=Broadcast</td><td>Echo Request an Broadcast mit gefaelschter Src-IP &rarr; alle Hosts antworten an Opfer &rarr; Amplification-DoS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP Redirect Attack</td><td class="mr">Type 5</td><td>Gefaelschter Redirect &rarr; Host leitet Traffic ueber Angreifer &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP Tunnel / Covert Channel</td><td class="mr">Type 0/8</td><td>Daten im ICMP-Payload versteckt &rarr; Firewall-Umgehung, C2-Kommunikation (z.B. icmptunnel, ptunnel)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Ping of Death</td><td class="mr">Type 8, Payload &gt; 65507 B</td><td>ICMP-Payload &gt; 65507 Byte &rarr; IP-Paket &gt; 65535 Byte &rarr; Buffer-Overflow (historisch, gepacht)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP-basiertes Recon</td><td class="mr">Type 13, 17</td><td>Timestamp/Address-Mask-Requests &rarr; Netzwerk-Aufklaerung (Zeitsync, Subnetzmaske)</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>Fraggle Attack</td><td class="mr">UDP Echo an Broadcast</td><td>Aehnlich Smurf, aber mit UDP Echo (Port 7) &rarr; Amplification-DoS</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping &rarr; Echo Request (Type=8, Code=0):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span><span class="hiot">08</span> <span class="hioc">00</span> <span class="hick">f7 ff</span> <span class="hiid">00 01</span> <span class="hisq">00 01</span> ...
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--orange)">08</span> = Type 8 = Echo Request &rarr; Wireshark: "Type: 8 (Echo (ping) request)"
+&#9632; Byte 36: <span style="color:var(--yellow)">00</span> = Code 0 = Standard Echo Request
+&#9632; Bytes 37-38: <span style="color:var(--blue)">f7 ff</span> = ICMP Checksum
+&#9632; Bytes 39-40: <span style="color:var(--green)">00 01</span> = Identifier
+&#9632; Bytes 41-42: <span style="color:var(--teal)">00 01</span> = Sequence Number</span>
+      </div>
+      <div class="wsl">Echo Reply (Type=0, Code=0):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span><span class="hiot">00</span> <span class="hioc">00</span> <span class="hick">ff ff</span> <span class="hiid">00 01</span> <span class="hisq">00 01</span> ...
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--orange)">00</span> = Type 0 = Echo Reply &rarr; Wireshark: "Type: 0 (Echo (ping) reply)"</span>
+      </div>
+      <div class="wsl">Destination Unreachable (Type=3, Code=1 = Host Unreachable):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span><span class="hiot">03</span> <span class="hioc">01</span> <span class="hick">xx xx</span> 00 00 00 00 ...
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--orange)">03</span> = Type 3 = Destination Unreachable
+&#9632; Byte 36: <span style="color:var(--yellow)">01</span> = Code 1 = Host Unreachable (kein Route zum Host)</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.type == 8</code> = Echo Requests. <code>icmp.type == 3</code> = Unreachable. <code>icmp</code> = alle ICMP-Pakete.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP CODE ──────────────────────────────────────────── -->
+<div class="card" id="icmp-code">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 36</span>
+    <span class="cn" style="color:var(--yellow)">ICMP Code</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Praezisiert den ICMP-Type &bull; Bei Type 8/0 immer 0 &bull; Bei Type 3 gibt Code den Grund an</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Der Code-Wert ist nur in Kombination mit dem Type-Wert sinnvoll.
+      Bei Echo Request/Reply (Type 8/0) ist Code immer 0.
+      Bei Destination Unreachable (Type 3) gibt Code den genauen Grund an.
+      Wireshark: <code>Code: 0</code>
+    </div>
+
+    <!-- CODES FUER TYPE 3: DESTINATION UNREACHABLE -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Codes fuer Type 3 (Destination Unreachable)</h4>
+      <table>
+        <tr><th>Code (hex)</th><th>Code (dez)</th><th>Bedeutung</th><th>Ursache</th></tr>
+        <tr><td class="m">00</td><td>0</td><td>Network Unreachable</td><td>Kein Route zum Zielnetz (Routing-Tabelle hat keinen Eintrag)</td></tr>
+        <tr><td class="m">01</td><td>1</td><td>Host Unreachable</td><td>Netz erreichbar, aber Host antwortet nicht (kein ARP-Reply)</td></tr>
+        <tr><td class="m">02</td><td>2</td><td>Protocol Unreachable</td><td>Host erreichbar, aber Protokoll (z.B. UDP) nicht unterstuetzt</td></tr>
+        <tr><td class="m">03</td><td>3</td><td>Port Unreachable</td><td>Host und Protokoll OK, aber Port nicht offen &rarr; UDP-Port-Scan-Antwort</td></tr>
+        <tr><td class="m">04</td><td>4</td><td>Fragmentation Needed, DF set</td><td>Router muss fragmentieren, aber DF=1 &rarr; Path MTU Discovery</td></tr>
+        <tr><td class="m">05</td><td>5</td><td>Source Route Failed</td><td>Source-Routing-Option konnte nicht ausgefuehrt werden</td></tr>
+        <tr><td class="m">06</td><td>6</td><td>Destination Network Unknown</td><td>Zielnetz unbekannt (veraltete Unterscheidung zu Code 0)</td></tr>
+        <tr><td class="m">07</td><td>7</td><td>Destination Host Unknown</td><td>Zielhost unbekannt</td></tr>
+        <tr><td class="m">09</td><td>9</td><td>Network Administratively Prohibited</td><td>Firewall/ACL blockiert das Zielnetz</td></tr>
+        <tr><td class="m">0a</td><td>10</td><td>Host Administratively Prohibited</td><td>Firewall/ACL blockiert den Zielhost</td></tr>
+        <tr><td class="m">0d</td><td>13</td><td>Communication Administratively Prohibited</td><td>Firewall blockiert die Verbindung (haeufigster Firewall-Code)</td></tr>
+      </table>
+    </div>
+
+    <!-- CODES FUER TYPE 5: REDIRECT -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Codes fuer Type 5 (Redirect)</h4>
+      <table>
+        <tr><th>Code (hex)</th><th>Code (dez)</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00</td><td>0</td><td>Redirect for Network &rarr; bessere Route fuer das gesamte Netz</td></tr>
+        <tr><td class="m">01</td><td>1</td><td>Redirect for Host &rarr; bessere Route fuer diesen spezifischen Host</td></tr>
+        <tr><td class="m">02</td><td>2</td><td>Redirect for Type of Service and Network</td></tr>
+        <tr><td class="m">03</td><td>3</td><td>Redirect for Type of Service and Host</td></tr>
+      </table>
+    </div>
+
+    <!-- CODES FUER TYPE 11: TIME EXCEEDED -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Codes fuer Type 11 (Time Exceeded)</h4>
+      <table>
+        <tr><th>Code (hex)</th><th>Code (dez)</th><th>Bedeutung</th><th>Kontext</th></tr>
+        <tr><td class="m">00</td><td>0</td><td>TTL exceeded in transit</td><td>TTL=0 beim Router &rarr; Traceroute-Antwort</td></tr>
+        <tr><td class="m">01</td><td>1</td><td>Fragment reassembly time exceeded</td><td>Nicht alle Fragmente kamen rechtzeitig an &rarr; Reassemblierung abgebrochen</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Code-Werte</h4>
+      <table>
+        <tr><th>Type</th><th>Code (hex)</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td>Type 3</td><td class="my">03</td><td>Port Unreachable &rarr; UDP-Port-Scan-Indikator: Angreifer scannt UDP-Ports, geschlossene Ports antworten mit Type 3 Code 3</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Type 3</td><td class="my">0d</td><td>Administratively Prohibited &rarr; Firewall-Fingerprinting: Angreifer erkennt Firewall-Typ anhand des Codes</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>Type 5</td><td class="my">00&ndash;03</td><td>Redirect &rarr; Angreifer sendet gefaelschten Redirect &rarr; Host aendert Routing-Tabelle &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Beliebig</td><td class="my">&gt; 0f</td><td>Unbekannter Code fuer den jeweiligen Type &rarr; RFC-Verletzung oder Fuzzing</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Destination Unreachable: Port Unreachable (Type=3, Code=3) &rarr; UDP-Port-Scan-Antwort:</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span><span class="hiot">03</span> <span class="hioc">03</span> <span class="hick">xx xx</span> 00 00 00 00 ...
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--orange)">03</span> = Type 3 = Destination Unreachable
+&#9632; Byte 36: <span style="color:var(--yellow)">03</span> = Code 3 = Port Unreachable
+&#9632; Wireshark: "Type: 3 (Destination unreachable)" + "Code: 3 (Port unreachable)"
+&#9632; Bedeutung: UDP-Port am Ziel ist geschlossen &rarr; Nmap-UDP-Scan-Indikator</span>
+      </div>
+      <div class="wsl">Time Exceeded (Type=11, Code=0) &rarr; Traceroute-Antwort eines Routers:</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span><span class="hiot">0b</span> <span class="hioc">00</span> <span class="hick">xx xx</span> 00 00 00 00 ...
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--orange)">0b</span> = Type 11 = Time Exceeded
+&#9632; Byte 36: <span style="color:var(--yellow)">00</span> = Code 0 = TTL exceeded in transit
+&#9632; Wireshark: "Type: 11 (Time-to-live exceeded)" &rarr; Router hat TTL=0 Paket verworfen</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.type == 3 and icmp.code == 3</code> = Port Unreachable (UDP-Scan). <code>icmp.type == 11</code> = Traceroute-Antworten.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP CHECKSUM ─────────────────────────────────────── -->
+<div class="card" id="icmp-cksum">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 37&ndash;38</span>
+    <span class="cn" style="color:var(--blue)">ICMP Checksum</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Ones-Complement-Pruefsumme &bull; ueber ICMP-Header UND ICMP-Payload</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Berechnung (RFC 792):</b> 16-Bit-Ones-Complement-Summe ueber den gesamten ICMP-Header
+      und ICMP-Payload (Checksum-Feld = 0x0000 beim Berechnen).
+      Im Gegensatz zur IP-Checksum deckt die ICMP-Checksum auch den Payload ab.
+      Wireshark: <code>Checksum: 0xf7ff [correct]</code>
+    </div>
+
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Checksum-Verhalten</h4>
+      <table>
+        <tr><th>Situation</th><th>Wireshark-Anzeige</th><th>Bedeutung</th></tr>
+        <tr><td>Korrekte Checksum</td><td class="mg">Checksum: 0xXXXX [correct]</td><td>ICMP-Paket wurde nicht korrumpiert &rarr; STANDARD</td></tr>
+        <tr><td>Checksum Offloading</td><td class="my">Checksum: 0x0000 [unverified]</td><td>NIC berechnet in Hardware &rarr; bei lokal gesendeten Paketen normal</td></tr>
+        <tr><td>Falsche Checksum</td><td class="mr">Checksum: 0xXXXX [incorrect]</td><td>Bit-Fehler, Manipulation oder Offloading-Artefakt</td></tr>
+      </table>
+    </div>
+
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Falsche ICMP-Checksum</h4>
+      <table>
+        <tr><th>Situation</th><th>Bedeutung</th><th>Risiko</th></tr>
+        <tr><td>Falsche Checksum im Netz (nicht Offloading)</td><td>Paket wurde nach dem Senden manipuliert &rarr; MITM oder Bit-Flip &rarr; Paket wird vom Empfaenger verworfen</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP-Tunnel-Indikator</td><td>Ungewoehnlich grosser Payload mit korrekter Checksum &rarr; Daten koennen im Payload versteckt sein (ptunnel, icmptunnel)</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Echo Request mit korrekter Checksum:</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 <span class="hick">f7 ff</span> 00 01 00 01 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 37-38: <span style="color:var(--blue)">f7 ff</span> = 0xF7FF &rarr; Wireshark: "Checksum: 0xf7ff [correct]"
+&#9632; Berechnet ueber: Type(08) + Code(00) + 0000 + ID(0001) + Seq(0001) + Payload(6162...)</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.checksum_bad == 1</code> findet ICMP-Pakete mit falscher Checksum (nach Aktivierung der Checksum-Validierung).</div>
+  </div>
+</div>
+
+<!-- ─── ICMP IDENTIFIER ───────────────────────────────────── -->
+<div class="card" id="icmp-id">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 39&ndash;40</span>
+    <span class="cn" style="color:var(--green)">Identifier</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Nur bei Type 8/0 (Echo) &bull; Identifiziert den Ping-Prozess &bull; OS-Fingerprinting-Quelle</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Wird vom Betriebssystem gesetzt, um mehrere gleichzeitige Ping-Prozesse
+      zu unterscheiden. Unter Linux ist es typischerweise die PID des ping-Prozesses.
+      Unter Windows ist es ein fester Wert (z.B. 0x0001) oder ein Zaehler.
+      Wireshark: <code>Identifier (BE): 1 (0x0001)</code>
+    </div>
+
+    <!-- NORMAL: OS-Fingerprinting -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; OS-Fingerprinting anhand des Identifiers</h4>
+      <table>
+        <tr><th>Identifier (hex)</th><th>Betriebssystem</th><th>Erklaerung</th></tr>
+        <tr><td class="m">PID (variabel, z.B. 0x1a2b)</td><td>Linux / macOS</td><td>ping setzt Identifier = eigene PID (Process ID). Wert aendert sich bei jedem neuen ping-Aufruf.</td></tr>
+        <tr><td class="m">0x0001 (oder kleiner Zaehler)</td><td>Windows</td><td>Windows nutzt einen kleinen, inkrementellen Zaehler, beginnt oft bei 0x0001.</td></tr>
+        <tr><td class="m">0x0000</td><td>Nmap / Hping3</td><td>Nmap setzt Identifier oft auf 0x0000 bei Ping-Scans &rarr; Scanner-Indikator</td></tr>
+        <tr><td class="m">0xAAAA, 0xBEEF etc.</td><td>Hping3 / Scapy</td><td>Manuelle Tools setzen oft feste oder auffaellige Werte</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Merkhilfe:</b> Wenn du denselben Host mehrfach anpingst und der Identifier sich
+        bei jedem Aufruf stark aendert (z.B. 0x1234, 0x5678, 0x9abc) &rarr; Linux/macOS (PID-basiert).
+        Wenn er bei 0x0001 bleibt oder nur um 1 steigt &rarr; Windows.
+        Wenn er immer 0x0000 ist &rarr; Scanner (Nmap).
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Identifier-Werte</h4>
+      <table>
+        <tr><th>Identifier (hex)</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">0x0000</td><td>Nmap-Ping-Scan-Indikator &rarr; Netzwerk-Recon</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Immer gleich (nicht Windows)</td><td>Automatisierter Tool-Traffic oder Covert-Channel (ICMP-Tunnel nutzt feste IDs)</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">Sehr hohe Werte (0xFF00+)</td><td>Moeglicherweise Scapy/Hping3 &rarr; manuell generierter Traffic</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (Identifier = PID, z.B. PID 6699 = 0x1A2B):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 f7 ff <span class="hiid">1a 2b</span> <span class="hisq">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 39-40: <span style="color:var(--green)">1a 2b</span> = 0x1A2B = 6699 &rarr; Wireshark: "Identifier (BE): 6699 (0x1a2b)"
+&#9632; OS-Fingerprint: Linux (PID-basierter Identifier)</span>
+      </div>
+      <div class="wsl">Windows ping (Identifier = 0x0001):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 xx xx <span class="hiid">00 01</span> <span class="hisq">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 39-40: <span style="color:var(--green)">00 01</span> = 0x0001 = 1 &rarr; Wireshark: "Identifier (BE): 1 (0x0001)"
+&#9632; OS-Fingerprint: Windows</span>
+      </div>
+      <div class="wsl">Nmap-Ping-Scan (Identifier = 0x0000):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 xx xx <span class="hbad">00 00</span> <span class="hisq">00 00</span> ...
+        <span class="wsc">&#9632; Bytes 39-40: <span style="color:var(--red)">00 00</span> = 0x0000 &rarr; Nmap-Ping-Scan-Indikator
+&#9632; Wireshark: "Identifier (BE): 0 (0x0000)" &rarr; kein normales OS setzt Identifier=0</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.ident == 0</code> findet Pakete mit Identifier=0 &rarr; Nmap-Indikator. <code>icmp.ident == 1</code> findet Windows-Pings.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP SEQUENCE NUMBER ──────────────────────────────── -->
+<div class="card" id="icmp-seq">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 41&ndash;42</span>
+    <span class="cn" style="color:var(--teal)">Sequence Number</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Nur bei Type 8/0 (Echo) &bull; Zaehlt Ping-Pakete &bull; Paket-Verlust-Detektion</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Wird bei jedem gesendeten Echo Request um 1 erhoeht.
+      Der Echo Reply spiegelt dieselbe Sequence Number zurueck.
+      Luecken in der Sequence Number zeigen Paketverlust an.
+      Wireshark: <code>Sequence Number (BE): 1 (0x0001)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Sequence-Number-Verhalten</h4>
+      <table>
+        <tr><th>Situation</th><th>Sequence Numbers</th><th>Bedeutung</th></tr>
+        <tr><td>Normaler Ping</td><td class="mg">0x0001, 0x0002, 0x0003, ...</td><td>Lueckenlos aufsteigend &rarr; kein Paketverlust</td></tr>
+        <tr><td>Paketverlust</td><td class="my">0x0001, 0x0003, 0x0004 (0x0002 fehlt)</td><td>Seq 2 fehlt &rarr; Paket verloren oder gefiltert</td></tr>
+        <tr><td>Nmap Ping Scan</td><td class="my">0x0000 (immer)</td><td>Nmap setzt Seq oft auf 0x0000 &rarr; Scanner-Indikator</td></tr>
+        <tr><td>Ping Flood</td><td class="mr">Sehr schnell steigende Seq</td><td>Hunderte Pakete pro Sekunde &rarr; DoS-Indikator</td></tr>
+        <tr><td>Wrap-Around</td><td class="mg">0xFFFF &rarr; 0x0000 &rarr; 0x0001</td><td>Normales Verhalten nach 65535 Pings (sehr lang laufender Ping)</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Sequence Numbers</h4>
+      <table>
+        <tr><th>Sequence Number</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">0x0000 (immer)</td><td>Nmap-Scan oder manuell generierter Traffic (Scapy/Hping3)</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Nicht-sequenziell</td><td>Pakete kommen in falscher Reihenfolge an &rarr; Routing-Anomalie oder Manipulation</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Gleiche Seq mehrfach</td><td>Replay-Angriff: Angreifer sendet abgefangenes Paket erneut</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">Sehr hohe Seq (0xFF00+) bei erstem Paket</td><td>Moeglicherweise Scapy/Hping3 mit manuellem Seq-Wert</td><td><span class="r rw">WARN</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normaler Linux ping (Seq=1, dann 2, dann 3 ...):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 f7 ff 1a 2b <span class="hisq">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 41-42: <span style="color:var(--teal)">00 01</span> = 0x0001 = Sequence Number 1
+&#9632; Wireshark: "Sequence Number (BE): 1 (0x0001)"
+&#9632; Naechstes Paket: Seq = 0x0002, dann 0x0003 usw.</span>
+      </div>
+      <div class="wsl">Paketverlust-Detektion (Seq 2 fehlt):</div>
+      <div class="wsb">
+        <span class="wo">Paket 1:&nbsp; </span>08 00 xx xx 1a 2b <span class="hisq">00 01</span> ...
+        <span class="wo">Paket 2:&nbsp; </span>08 00 xx xx 1a 2b <span class="hbad">00 03</span> ...
+        <span class="wsc">&#9632; Seq 0x0002 fehlt &rarr; Paket verloren oder von Firewall gefiltert
+&#9632; Wireshark: Statistik &rarr; ICMP &rarr; zeigt fehlende Sequenznummern</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.seq == 1</code> findet erstes Ping-Paket. Fehlende Seq-Nummern erkennst du in Wireshark unter Statistics &rarr; I/O Graph oder manuell in der Paketliste.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP DATA / PAYLOAD ──────────────────────────────── -->
+<div class="card" id="icmp-data">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 43+</span>
+    <span class="cn" style="color:var(--pink)">ICMP Data (Payload)</span>
+    <span class="cs">Variabel &bull; Bei Echo Request/Reply: Fuell-Daten &bull; Bei Fehlermeldungen: Original-IP-Header + 8 Byte Original-Payload</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Zwei verschiedene Rollen des Payloads:</b><br>
+      <b>1. Bei Echo Request/Reply (Type 8/0):</b> Beliebige Fuell-Daten. Werden vom Empfaenger
+      unveraendert zurueckgesendet. Dienen zur Laufzeitmessung und Integritaetspruefung.<br>
+      <b>2. Bei Fehlermeldungen (Type 3, 11, 12):</b> Enthaelt den Original-IP-Header (20 Byte)
+      + die ersten 8 Byte des Original-Payloads (TCP/UDP-Header-Anfang). Dient dem Sender
+      zur Identifikation, welches Paket den Fehler ausgeloest hat.
+    </div>
+
+    <!-- NORMAL: Echo-Payload nach OS -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Echo-Payload-Muster nach Betriebssystem (OS-Fingerprinting)</h4>
+      <table>
+        <tr><th>Betriebssystem</th><th>Payload (hex)</th><th>Payload (ASCII)</th><th>Groesse</th><th>Erklaerung</th></tr>
+        <tr>
+          <td>Linux (iputils ping)</td>
+          <td class="m">08 09 0a 0b 0c 0d 0e 0f<br>10 11 12 13 14 15 16 17<br>18 19 1a 1b 1c 1d 1e 1f<br>20 21 22 23 24 25 26 27<br>28 29 2a 2b 2c 2d 2e 2f<br>30 31 32 33 34 35 36 37</td>
+          <td class="m">.....<br>........<br>........<br> !"#$%&amp;'<br>()*+,-./</td>
+          <td>48 Byte (Standard)</td>
+          <td>Aufsteigender Byte-Zaehler ab 0x08. Sehr charakteristisch und leicht erkennbar.</td>
+        </tr>
+        <tr>
+          <td>Windows (ping.exe)</td>
+          <td class="m">61 62 63 64 65 66 67 68<br>69 6a 6b 6c 6d 6e 6f 70<br>71 72 73 74 75 76 77 61<br>62 63 64 65 66 67 68 69</td>
+          <td class="m">abcdefgh<br>ijklmnop<br>qrstuvwa<br>bcdefghi</td>
+          <td>32 Byte (Standard)</td>
+          <td>Alphabet a-w, dann wiederholt. Sehr charakteristisch fuer Windows-ping.</td>
+        </tr>
+        <tr>
+          <td>macOS (ping)</td>
+          <td class="m">08 09 0a 0b 0c 0d 0e 0f<br>10 11 12 13 ...</td>
+          <td class="m">Aehnlich Linux</td>
+          <td>56 Byte (Standard)</td>
+          <td>Aehnlich Linux, aber 56 Byte Payload (64 Byte ICMP gesamt inkl. 8 Byte Header).</td>
+        </tr>
+        <tr>
+          <td>Nmap (Ping-Scan)</td>
+          <td class="m">00 00 00 00 ...</td>
+          <td class="m">Nullbytes</td>
+          <td>0&ndash;8 Byte</td>
+          <td>Nmap sendet oft minimalen oder leeren Payload &rarr; Scanner-Indikator.</td>
+        </tr>
+        <tr>
+          <td>Hping3</td>
+          <td class="m">Benutzerdefiniert</td>
+          <td class="m">Beliebig</td>
+          <td>Variabel</td>
+          <td>Hping3 erlaubt beliebigen Payload &rarr; kann Text, Shellcode etc. enthalten.</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- NORMAL: Fehlermeldungs-Payload -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Payload bei ICMP-Fehlermeldungen (Type 3, 11, 12)</h4>
+      <table>
+        <tr><th>Offset im ICMP-Payload</th><th>Inhalt</th><th>Groesse</th><th>Bedeutung</th></tr>
+        <tr><td class="m">+0</td><td>Unused (4 Byte, alle 0x00)</td><td>4 Byte</td><td>Reserviert (ausser bei Type 3 Code 4: hier steht die Next-Hop-MTU)</td></tr>
+        <tr><td class="m">+4</td><td>Original IP Header</td><td>20 Byte</td><td>Der IP-Header des Pakets, das den Fehler ausgeloest hat</td></tr>
+        <tr><td class="m">+24</td><td>Erste 8 Byte des Original-Payloads</td><td>8 Byte</td><td>TCP: Src-Port + Dst-Port + Seq-Nr. / UDP: Src-Port + Dst-Port + Length + Checksum</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Warum 8 Byte?</b> RFC 792 schreibt vor, dass ICMP-Fehlermeldungen den
+        Original-IP-Header + die ersten 8 Byte des Payloads enthalten muessen.
+        8 Byte reichen, um bei TCP und UDP die Port-Nummern zu identifizieren
+        (Src-Port 2 Byte + Dst-Port 2 Byte + 4 weitere Byte).
+        So kann der Sender das betroffene Socket identifizieren.
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG / GEFAEHRLICH -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaelliger ICMP-Payload</h4>
+      <table>
+        <tr><th>Situation</th><th>Indikator</th><th>Risiko</th></tr>
+        <tr><td>Ungewoehnlich grosser Payload (&gt; 1400 Byte)</td><td>Moeglicherweise ICMP-Tunnel (ptunnel, icmptunnel) &rarr; Daten werden im Payload versteckt</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Payload enthaelt lesbare Strings</td><td>HTTP-Anfragen, Befehle, Base64 im ICMP-Payload &rarr; C2-Kommunikation ueber ICMP-Tunnel</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Payload enthaelt Nullbytes (ausser Nmap)</td><td>Moeglicher Fuzzing-Versuch oder Exploit-Payload</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Payload weicht vom OS-Muster ab</td><td>Kein Linux/Windows/macOS-Muster &rarr; manuell generierter Traffic (Scapy, Hping3)</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>Payload enthaelt Shellcode-Muster</td><td>NOP-Sleds (0x90 0x90 ...) oder typische Shellcode-Bytes im Payload</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (48 Byte Payload, aufsteigender Zaehler ab 0x08):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 f7 ff 1a 2b 00 01 <span class="hip">08 09 0a 0b 0c 0d 0e 0f</span>
+        <span class="wo">0032&nbsp; </span><span class="hip">10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f</span>
+        <span class="wo">0042&nbsp; </span><span class="hip">20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f</span>
+        <span class="wo">0052&nbsp; </span><span class="hip">30 31 32 33 34 35 36 37</span>
+        <span class="wsc">&#9632; Bytes 43+: <span style="color:var(--pink)">08 09 0a ... 37</span> = aufsteigender Zaehler &rarr; Linux-iputils-ping-Fingerprint
+&#9632; Wireshark: "Data (48 bytes)" &rarr; OS-Fingerprint: Linux</span>
+      </div>
+      <div class="wsl">Windows ping (32 Byte Payload, Alphabet a-w):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 xx xx 00 01 00 01 <span class="hip">61 62 63 64 65 66 67 68</span>
+        <span class="wo">0032&nbsp; </span><span class="hip">69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 61</span>
+        <span class="wo">0042&nbsp; </span><span class="hip">62 63 64 65 66 67 68 69</span>
+        <span class="wsc">&#9632; Bytes 43+: <span style="color:var(--pink)">61 62 63 ... = "abcdefghi..."</span> &rarr; Windows-ping-Fingerprint
+&#9632; Wireshark: "Data (32 bytes)" &rarr; OS-Fingerprint: Windows</span>
+      </div>
+      <div class="wsl">ICMP-Tunnel-Verdacht (grosser Payload mit lesbaren Strings):</div>
+      <div class="wsb">
+        <span class="wo">0022&nbsp; </span>08 00 xx xx 00 01 00 01 <span class="hbad">47 45 54 20 2f 20 48 54</span>
+        <span class="wo">0032&nbsp; </span><span class="hbad">54 50 2f 31 2e 31 0d 0a</span> ...
+        <span class="wsc">&#9632; Bytes 43+: <span style="color:var(--red)">47 45 54 20 2f 20 48 54 54 50 2f 31 2e 31</span> = "GET / HTTP/1.1
+"
+&#9632; HTTP-Anfrage im ICMP-Payload &rarr; ICMP-Tunnel! Firewall-Umgehung / C2-Kommunikation</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>data.len &gt; 100</code> findet ungewoehnlich grosse ICMP-Payloads. Wireshark &rarr; Follow &rarr; ICMP Stream zeigt den rekonstruierten Tunnel-Traffic.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     ZUSAMMENFASSUNG: VOLLSTAENDIGES PING-PAKET
+     ════════════════════════════════════════════════════════════ -->
+<div class="layer-head" id="summary">
+  <span class="lh-badge" style="background:var(--purple)">Zusammenfassung</span>
+  <span class="lh-title">Vollstaendiges ICMP Echo Request &mdash; Byte-fuer-Byte</span>
+  <span class="lh-sub">Linux ping 192.168.1.1 &rarr; 192.168.1.100 &bull; Gesamtgroesse: 74 Byte (14 Ethernet + 20 IPv4 + 8 ICMP-Header + 32 Byte Payload)</span>
+</div>
+
+<div class="card" id="full-packet">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 1&ndash;74</span>
+    <span class="cn" style="color:var(--purple)">Vollstaendiges Paket &mdash; Annotierter Hex-Dump</span>
+    <span class="cs">Alle Felder auf einen Blick &bull; Farbcodiert nach Layer &bull; Linux ping &rarr; Windows-Ziel</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="vs vi">
+      <h4>&#128196; VOLLSTAENDIGER HEX-DUMP (Wireshark-Format)</h4>
+      <div class="wsb" style="font-size:.85rem;line-height:1.9;">
+<span class="wo">0000&nbsp; </span><span class="hem">ff ff ff ff ff ff</span> <span class="hes">00 0c 29 ab cd ef</span> <span class="hee">08 00</span>
+<span class="wsc">       &#9632; <span style="color:var(--teal)">ff ff ff ff ff ff</span> = Dst MAC: Broadcast (ARP-Beispiel) | <span style="color:var(--green)">00 0c 29 ab cd ef</span> = Src MAC: VMware-NIC | <span style="color:var(--yellow)">08 00</span> = EtherType: IPv4</span>
+
+<span class="wo">000e&nbsp; </span><span class="hiv">45</span> <span class="hid2">00</span> <span class="hil">00 54</span> <span class="hii">3b f5</span> <span class="hif">40 00</span> <span class="hit">40</span> <span class="hio">01</span> <span class="hik">b8 61</span> <span class="his">c0 a8 01 01</span>
+<span class="wsc">       &#9632; <span style="color:var(--blue)">45</span>=Ver4/IHL5 | <span style="color:var(--gray)">00</span>=DSCP/ECN | <span style="color:var(--teal)">00 54</span>=TotalLen84 | <span style="color:var(--pink)">3b f5</span>=ID | <span style="color:var(--pink)">40 00</span>=Flags(DF) | <span style="color:var(--teal)">40</span>=TTL64 | <span style="color:var(--orange)">01</span>=Proto(ICMP) | <span style="color:var(--blue)">b8 61</span>=IPCksum | <span style="color:var(--green)">c0 a8 01 01</span>=SrcIP</span>
+
+<span class="wo">001e&nbsp; </span><span class="hid3">c0 a8 01 64</span>
+<span class="wsc">       &#9632; <span style="color:var(--purple)">c0 a8 01 64</span> = Dst IP: 192.168.1.100</span>
+
+<span class="wo">0022&nbsp; </span><span class="hiot">08</span> <span class="hioc">00</span> <span class="hick">f7 ff</span> <span class="hiid">1a 2b</span> <span class="hisq">00 01</span> <span class="hip">08 09 0a 0b 0c 0d 0e 0f</span>
+<span class="wsc">       &#9632; <span style="color:var(--orange)">08</span>=Type(EchoReq) | <span style="color:var(--yellow)">00</span>=Code0 | <span style="color:var(--blue)">f7 ff</span>=ICMPCksum | <span style="color:var(--green)">1a 2b</span>=ID(PID=6699,Linux) | <span style="color:var(--teal)">00 01</span>=Seq1 | <span style="color:var(--pink)">08 09 0a 0b...</span>=Payload(Linux)</span>
+
+<span class="wo">0032&nbsp; </span><span class="hip">10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f</span>
+<span class="wo">0042&nbsp; </span><span class="hip">20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f</span>
+<span class="wo">0052&nbsp; </span><span class="hip">30 31 32 33 34 35 36 37</span>
+<span class="wsc">       &#9632; Linux-ping-Payload: aufsteigender Zaehler 0x08&ndash;0x37 (48 Byte) &rarr; OS-Fingerprint: Linux iputils-ping</span>
+      </div>
+
+      <div class="note-g" style="margin-top:.8rem;">
+        <b>&#128161; Schnell-Referenz: Wichtigste Bytes fuer die Analyse</b><br>
+        &bull; <b>Byte 1-6:</b> Dst MAC &rarr; Broadcast? Multicast? Bekannte OUI?<br>
+        &bull; <b>Byte 7-12:</b> Src MAC &rarr; OUI = Hersteller / VM-Indikator<br>
+        &bull; <b>Byte 13-14:</b> EtherType &rarr; 0x0800=IPv4, 0x0806=ARP, 0x86DD=IPv6<br>
+        &bull; <b>Byte 15:</b> IP-Version + IHL &rarr; 0x45 = Standard, 0x4F = Optionen vorhanden<br>
+        &bull; <b>Byte 23:</b> TTL &rarr; 64=Linux, 128=Windows, 255=Cisco &rarr; OS-Fingerprint<br>
+        &bull; <b>Byte 24:</b> Protocol &rarr; 0x01=ICMP, 0x06=TCP, 0x11=UDP<br>
+        &bull; <b>Byte 27-30:</b> Src IP &rarr; RFC 1918? Spoofing-Indikator?<br>
+        &bull; <b>Byte 31-34:</b> Dst IP &rarr; Broadcast? Multicast? Ziel-Netz?<br>
+        &bull; <b>Byte 35:</b> ICMP Type &rarr; 8=Request, 0=Reply, 3=Unreachable, 11=TTL-Exceeded<br>
+        &bull; <b>Byte 36:</b> ICMP Code &rarr; praezisiert den Type<br>
+        &bull; <b>Bytes 39-40:</b> ICMP ID &rarr; PID=Linux, 0x0001=Windows, 0x0000=Nmap<br>
+        &bull; <b>Bytes 43+:</b> ICMP Payload &rarr; Muster = OS-Fingerprint, Grosser Payload = Tunnel-Verdacht
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════════════════════════ -->
+<footer>
+  <div style="font-size:1rem;font-weight:700;margin-bottom:.4rem;">
+    &#128270; Wireshark ICMP/IPv4/Ethernet Referenz
+  </div>
+  <div style="font-size:.85rem;opacity:.7;margin-bottom:.3rem;">
+    Erstellt fuer Netzwerk-Analyse und Penetration Testing &bull;
+    Alle Angaben nach RFC 791 (IPv4), RFC 792 (ICMP), IEEE 802.3 (Ethernet)
+  </div>
+  <div style="font-size:.8rem;opacity:.5;">
+    RFC 791 &bull; RFC 792 &bull; RFC 826 &bull; RFC 1918 &bull; RFC 3168 &bull; IEEE 802.1Q &bull; IEEE 802.3
+  </div>
+</footer>
+
+</div><!-- end .container -->
+
+<!-- ════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ════════════════════════════════════════════════════════════ -->
+<script>
+// ── Toggle-Funktion fuer Klappcards ──────────────────────────
+function tog(hdr) {
+  var body = hdr.nextElementSibling;
+  var arrow = hdr.querySelector('.ca');
+  if (body.style.display === 'none' || body.style.display === '') {
+    body.style.display = 'block';
+    arrow.style.transform = 'rotate(180deg)';
+  } else {
+    body.style.display = 'none';
+    arrow.style.transform = 'rotate(0deg)';
+  }
+}
+
+// ── Alle Karten beim Start oeffnen ───────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  var bodies = document.querySelectorAll('.card-b');
+  var arrows = document.querySelectorAll('.ca');
+  bodies.forEach(function(b) { b.style.display = 'block'; });
+  arrows.forEach(function(a) { a.style.transform = 'rotate(180deg)'; });
+
+  // ── Byte-Map: Hover-Highlight ────────────────────────────
+  var cells = document.querySelectorAll('.bm-cell');
+  cells.forEach(function(cell) {
+    cell.addEventListener('click', function() {
+      var target = this.getAttribute('data-target');
+      if (target) {
+        var el = document.getElementById(target);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.style.outline = '3px solid var(--yellow)';
+          setTimeout(function() { el.style.outline = ''; }, 2000);
+        }
+      }
+    });
+    cell.addEventListener('mouseenter', function() {
+      this.style.filter = 'brightness(1.4)';
+    });
+    cell.addEventListener('mouseleave', function() {
+      this.style.filter = '';
+    });
+  });
+
+  // ── Alle aufklappen / zuklappen Buttons ─────────────────
+  var expandBtn = document.getElementById('expand-all');
+  var collapseBtn = document.getElementById('collapse-all');
+  if (expandBtn) {
+    expandBtn.addEventListener('click', function() {
+      document.querySelectorAll('.card-b').forEach(function(b) { b.style.display = 'block'; });
+      document.querySelectorAll('.ca').forEach(function(a) { a.style.transform = 'rotate(180deg)'; });
+    });
+  }
+  if (collapseBtn) {
+    collapseBtn.addEventListener('click', function() {
+      document.querySelectorAll('.card-b').forEach(function(b) { b.style.display = 'none'; });
+      document.querySelectorAll('.ca').forEach(function(a) { a.style.transform = 'rotate(0deg)'; });
+    });
+  }
+});
+</script>
+
+</body>
+</html>
+
+<!-- ════════════════════════════════════════════════════════════
+     LAYER 3 – ICMP
+     ════════════════════════════════════════════════════════════ -->
+<div class="layer-h" id="icmp">
+  <span style="font-size:1.5rem;">&#128246;</span>
+  Layer 3 &mdash; ICMP (Internet Control Message Protocol)
+  <span class="layer-s">RFC 792 &bull; Bytes 35&ndash;42 (Standard Echo) &bull; Kein Port, kein Handshake &bull; Direkt in IP (Protocol=1)</span>
+</div>
+
+<!-- ─── ICMP TYPE ──────────────────────────────────────────── -->
+<div class="card" id="icmp-type">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 35</span>
+    <span class="cn" style="color:var(--red)">ICMP Type</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Bestimmt die Klasse der ICMP-Nachricht &bull; Zusammen mit Code eindeutig</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Das Type-Feld klassifiziert die ICMP-Nachricht (RFC 792 + Erweiterungen).
+      Zusammen mit dem Code-Feld (Byte 36) ergibt sich die genaue Bedeutung.
+      Wireshark: <code>Type: 8 (Echo (ping) request)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Wichtige ICMP-Typen (RFC 792 + RFC 4884)</h4>
+      <table>
+        <tr><th>Hex</th><th>Dez</th><th>Name</th><th>RFC</th><th>Richtung</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00</td><td>0</td><td>Echo Reply</td><td>RFC 792</td><td>Antwort &rarr; Absender</td><td>Antwort auf Ping (Type 8) &rarr; Ziel ist erreichbar</td></tr>
+        <tr><td class="m">03</td><td>3</td><td>Destination Unreachable</td><td>RFC 792</td><td>Router/Ziel &rarr; Absender</td><td>Ziel nicht erreichbar (Code bestimmt Grund)</td></tr>
+        <tr><td class="m">04</td><td>4</td><td>Source Quench</td><td>RFC 792</td><td>Router &rarr; Absender</td><td>Veraltet (RFC 6633 deprecated): Bitte langsamer senden</td></tr>
+        <tr><td class="m">05</td><td>5</td><td>Redirect</td><td>RFC 792</td><td>Router &rarr; Host</td><td>Bessere Route verfuegbar (Code bestimmt Typ)</td></tr>
+        <tr><td class="m">08</td><td>8</td><td>Echo Request</td><td>RFC 792</td><td>Absender &rarr; Ziel</td><td>Ping-Anfrage &rarr; unser Paket</td></tr>
+        <tr><td class="m">0b</td><td>11</td><td>Time Exceeded</td><td>RFC 792</td><td>Router &rarr; Absender</td><td>TTL=0 (Code 0) oder Fragment-Timeout (Code 1) &rarr; Traceroute</td></tr>
+        <tr><td class="m">0c</td><td>12</td><td>Parameter Problem</td><td>RFC 792</td><td>Router/Ziel &rarr; Absender</td><td>Fehler im IP-Header (Code 0: Pointer zeigt auf Problem)</td></tr>
+        <tr><td class="m">0d</td><td>13</td><td>Timestamp Request</td><td>RFC 792</td><td>Absender &rarr; Ziel</td><td>Zeitstempel-Anfrage (Netzwerk-Latenz messen)</td></tr>
+        <tr><td class="m">0e</td><td>14</td><td>Timestamp Reply</td><td>RFC 792</td><td>Ziel &rarr; Absender</td><td>Antwort auf Timestamp Request</td></tr>
+        <tr><td class="m">11</td><td>17</td><td>Address Mask Request</td><td>RFC 950</td><td>Host &rarr; Router</td><td>Subnetzmaske anfragen (veraltet)</td></tr>
+        <tr><td class="m">12</td><td>18</td><td>Address Mask Reply</td><td>RFC 950</td><td>Router &rarr; Host</td><td>Subnetzmaske antworten (veraltet)</td></tr>
+        <tr><td class="m">1e</td><td>30</td><td>Traceroute</td><td>RFC 1393</td><td>Router &rarr; Absender</td><td>Veraltet: Traceroute-Information</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Seltene oder missbraeuchliche ICMP-Typen</h4>
+      <table>
+        <tr><th>Hex</th><th>Dez</th><th>Name</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">05</td><td>5</td><td>Redirect</td><td>Kann Routing-Tabelle manipulieren &rarr; MITM-Vorbereitung moeglich</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">09</td><td>9</td><td>Router Advertisement</td><td>Kann falschen Default-Gateway ankuendigen &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">0a</td><td>10</td><td>Router Solicitation</td><td>Netzwerk-Recon: Suche nach Routern</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">11</td><td>17</td><td>Address Mask Request</td><td>Netzwerk-Recon: Subnetzmaske ermitteln</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">1e</td><td>30</td><td>Traceroute</td><td>Netzwerk-Topologie-Aufklaerung</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">28+</td><td>40+</td><td>Unbekannte Typen</td><td>Nicht standardisiert &rarr; Fuzzing oder Covert Channel</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; ICMP-basierte Angriffe nach Type</h4>
+      <table>
+        <tr><th>Angriff</th><th>Type</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Ping Flood / ICMP Flood</td><td class="mr">Type 8</td><td>Massenhaft Echo Requests &rarr; DoS durch Bandbreite oder CPU-Last</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Smurf Attack</td><td class="mr">Type 8 an Broadcast</td><td>Echo Request an Broadcast-Adresse &rarr; alle Hosts antworten mit Type 0 &rarr; Amplification-DoS</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP Redirect Attack</td><td class="mr">Type 5</td><td>Gefaelschter Redirect &rarr; Opfer aendert Routing-Tabelle &rarr; Traffic ueber Angreifer (MITM)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Ping of Death</td><td class="mr">Type 8 (fragmentiert)</td><td>Fragmentierter Ping &gt; 65535 Byte &rarr; Buffer-Overflow beim Reassemblieren (historisch)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP Covert Channel</td><td class="mr">Type 8/0</td><td>Daten im ICMP-Payload verstecken &rarr; Daten-Exfiltration durch Firewall (z.B. icmptunnel, ptunnel)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>ICMP Router Advertisement</td><td class="mr">Type 9</td><td>Gefaelschte Router-Ankuendigung &rarr; Default-Gateway-Manipulation &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Netzwerk-Recon (Ping Sweep)</td><td class="mr">Type 8</td><td>Massenhaft Pings an alle IPs eines Subnetzes &rarr; Erreichbarkeit kartieren</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Echo Request (Type=8, normaler Ping):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hit2">08</span> <span class="hic">00</span> <span class="hik2">f7 ff</span> <span class="hii">00 01</span> <span class="his2">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--red)">08</span> = Type 8 = Echo Request &rarr; Wireshark: "Type: 8 (Echo (ping) request)"</span>
+      </div>
+      <div class="wsl">Echo Reply (Type=0, Antwort vom Ziel):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hit2">00</span> <span class="hic">00</span> <span class="hik2">ff ff</span> <span class="hii">00 01</span> <span class="his2">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--red)">00</span> = Type 0 = Echo Reply &rarr; Wireshark: "Type: 0 (Echo (ping) reply)"</span>
+      </div>
+      <div class="wsl">Destination Unreachable (Type=3, Port unreachable):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hbad">03</span> <span class="hbad">03</span> xx xx 00 00 00 00 [original IP header + 8 Byte]
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--red)">03</span> = Type 3 = Destination Unreachable
+&#9632; Byte 36: <span style="color:var(--orange)">03</span> = Code 3 = Port Unreachable &rarr; UDP-Port geschlossen</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.type == 8</code> = Ping Requests. <code>icmp.type == 3</code> = Unreachable. <code>icmp.type == 11</code> = TTL Exceeded (Traceroute).</div>
+  </div>
+</div>
+
+<!-- ─── ICMP CODE ──────────────────────────────────────────── -->
+<div class="card" id="icmp-code">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Byte 36</span>
+    <span class="cn" style="color:var(--orange)">ICMP Code</span>
+    <span class="cs">1 Byte &bull; 8 Bit &bull; Praezisiert den ICMP-Type &bull; Bei Echo Request/Reply immer 0x00</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Verfeinert den ICMP-Type. Beispiel: Type 3 (Destination Unreachable) hat
+      16 verschiedene Codes, die den genauen Grund angeben.
+      Bei Echo Request (Type 8) und Echo Reply (Type 0) ist Code immer 0x00.
+      Wireshark: <code>Code: 0</code>
+    </div>
+
+    <!-- NORMAL: Alle wichtigen Type/Code-Kombinationen -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Alle wichtigen Type/Code-Kombinationen</h4>
+      <table>
+        <tr><th>Type</th><th>Code (hex)</th><th>Code (dez)</th><th>Bedeutung</th><th>Kontext</th></tr>
+        <!-- Echo -->
+        <tr><td>0 (Echo Reply)</td><td class="m">00</td><td>0</td><td>Echo Reply</td><td>Antwort auf Ping &rarr; einziger gueltiger Code</td></tr>
+        <tr><td>8 (Echo Request)</td><td class="m">00</td><td>0</td><td>Echo Request</td><td>Ping-Anfrage &rarr; einziger gueltiger Code</td></tr>
+        <!-- Destination Unreachable -->
+        <tr><td>3 (Dst Unreachable)</td><td class="m">00</td><td>0</td><td>Net Unreachable</td><td>Kein Route zum Zielnetz</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">01</td><td>1</td><td>Host Unreachable</td><td>Ziel-Host nicht erreichbar (ARP-Fehler)</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">02</td><td>2</td><td>Protocol Unreachable</td><td>Protokoll auf Ziel nicht unterstuetzt</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">03</td><td>3</td><td>Port Unreachable</td><td>UDP-Port geschlossen &rarr; Standard-Antwort bei UDP-Portscan</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">04</td><td>4</td><td>Fragmentation Needed</td><td>DF=1 gesetzt, aber Paket zu gross &rarr; Path MTU Discovery</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">05</td><td>5</td><td>Source Route Failed</td><td>Loose/Strict Source Routing fehlgeschlagen</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">09</td><td>9</td><td>Net Admin Prohibited</td><td>Firewall/ACL blockiert Zielnetz</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">0a</td><td>10</td><td>Host Admin Prohibited</td><td>Firewall/ACL blockiert Ziel-Host</td></tr>
+        <tr><td>3 (Dst Unreachable)</td><td class="m">0d</td><td>13</td><td>Communication Admin Prohibited</td><td>Firewall blockiert Verbindung (haeufig bei Firewalls)</td></tr>
+        <!-- Redirect -->
+        <tr><td>5 (Redirect)</td><td class="m">00</td><td>0</td><td>Redirect for Network</td><td>Bessere Route fuer Zielnetz</td></tr>
+        <tr><td>5 (Redirect)</td><td class="m">01</td><td>1</td><td>Redirect for Host</td><td>Bessere Route fuer Ziel-Host</td></tr>
+        <tr><td>5 (Redirect)</td><td class="m">02</td><td>2</td><td>Redirect for TOS+Net</td><td>Bessere Route fuer TOS+Netz</td></tr>
+        <tr><td>5 (Redirect)</td><td class="m">03</td><td>3</td><td>Redirect for TOS+Host</td><td>Bessere Route fuer TOS+Host</td></tr>
+        <!-- Time Exceeded -->
+        <tr><td>11 (Time Exceeded)</td><td class="m">00</td><td>0</td><td>TTL Exceeded in Transit</td><td>TTL=0 beim Router &rarr; Traceroute-Antwort</td></tr>
+        <tr><td>11 (Time Exceeded)</td><td class="m">01</td><td>1</td><td>Fragment Reassembly Timeout</td><td>Nicht alle Fragmente kamen rechtzeitig an</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Unerwartete Code-Werte</h4>
+      <table>
+        <tr><th>Type</th><th>Code</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td>0 oder 8</td><td class="my">!= 00</td><td>Code != 0 bei Echo &rarr; RFC-Verletzung, Fuzzing oder Exploit</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>3</td><td class="my">0e&ndash;ff</td><td>Unbekannter Code bei Destination Unreachable &rarr; RFC-Verletzung</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>11</td><td class="my">02&ndash;ff</td><td>Unbekannter Code bei Time Exceeded &rarr; RFC-Verletzung</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td>Beliebig</td><td class="my">ff</td><td>Code=255 &rarr; nie gueltig &rarr; Fuzzing</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Echo Request (Type=8, Code=0 &rarr; einzige gueltige Kombination):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hit2">08</span> <span class="hic">00</span> f7 ff 00 01 00 01 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Byte 36: <span style="color:var(--orange)">00</span> = Code 0 &rarr; Wireshark: "Code: 0" &rarr; einziger gueltiger Wert bei Type 8</span>
+      </div>
+      <div class="wsl">Port Unreachable (Type=3, Code=3 &rarr; UDP-Port geschlossen):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hbad">03</span> <span class="hbad">03</span> xx xx 00 00 00 00 [original IP-Header + 8 Byte Payload]
+        <span class="wsc">&#9632; Byte 35: <span style="color:var(--red)">03</span> = Type 3, Byte 36: <span style="color:var(--orange)">03</span> = Code 3 = Port Unreachable
+&#9632; Wireshark: "Type: 3 (Destination unreachable)" + "Code: 3 (Port unreachable)"
+&#9632; Typisch bei UDP-Portscan: geschlossener Port antwortet mit ICMP 3/3</span>
+      </div>
+      <div class="wsl">Fragmentation Needed (Type=3, Code=4 &rarr; Path MTU Discovery):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span><span class="hbad">03</span> <span class="hbad">04</span> xx xx 00 00 <span class="hif">05 dc</span> [original IP-Header + 8 Byte]
+        <span class="wsc">&#9632; Type=3, Code=4 + Next-Hop-MTU (hier: 0x05DC = 1500 Byte)
+&#9632; Wireshark: "Code: 4 (Fragmentation needed)" + "MTU of next hop: 1500"</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.code == 3 and icmp.type == 3</code> = Port Unreachable. <code>icmp.type == 3 and icmp.code == 4</code> = Fragmentation Needed (PMTUD).</div>
+  </div>
+</div>
+
+<!-- ─── ICMP CHECKSUM ─────────────────────────────────────── -->
+<div class="card" id="icmp-cksum">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 37&ndash;38</span>
+    <span class="cn" style="color:var(--blue)">ICMP Checksum</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Ones-Complement-Pruefsumme &bull; ueber gesamten ICMP-Header + Payload</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Berechnung (RFC 792):</b> 16-Bit-Ones-Complement-Summe des gesamten ICMP-Pakets
+      (Header + Payload, mit Checksum-Feld = 0x0000).
+      Im Gegensatz zur IP-Checksum deckt die ICMP-Checksum auch den Payload ab.
+      Wireshark: <code>Checksum: 0xf7ff [correct]</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Checksum-Verhalten</h4>
+      <table>
+        <tr><th>Situation</th><th>Wireshark-Anzeige</th><th>Bedeutung</th></tr>
+        <tr><td>Korrekte Checksum</td><td class="mg">Checksum: 0xXXXX [correct]</td><td>ICMP-Paket nicht korrumpiert &rarr; STANDARD</td></tr>
+        <tr><td>Checksum Offloading</td><td class="my">Checksum: 0x0000 [unverified]</td><td>NIC berechnet in Hardware &rarr; bei lokal generierten Paketen normal</td></tr>
+        <tr><td>Falsche Checksum</td><td class="mr">Checksum: 0xXXXX [incorrect]</td><td>Bit-Fehler, Manipulation oder Offloading-Artefakt</td></tr>
+      </table>
+    </div>
+
+    <!-- GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; Falsche Checksum als Angriffs-Indikator</h4>
+      <table>
+        <tr><th>Situation</th><th>Bedeutung</th><th>Risiko</th></tr>
+        <tr><td>Falsche Checksum im Netz (kein Offloading)</td><td>Paket wurde nach dem Senden manipuliert &rarr; MITM</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Checksum = 0x0000 im Netz</td><td>Kein Offloading moeglich (empfangenes Paket) &rarr; Manipulation oder Fuzzing</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Checksum passt nicht zum Payload</td><td>Payload wurde geaendert, Checksum nicht aktualisiert &rarr; Manipulation erkennbar</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Echo Request mit korrekter Checksum:</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 <span class="hik2">f7 ff</span> 00 01 00 01 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 37-38: <span style="color:var(--blue)">f7 ff</span> = 0xF7FF &rarr; Wireshark: "Checksum: 0xf7ff [correct]"
+&#9632; Berechnet ueber: Type(08) + Code(00) + 0000 + ID(0001) + Seq(0001) + Payload</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.checksum_bad == 1</code> findet ICMP-Pakete mit falscher Checksum (nach Aktivierung der Validierung).</div>
+  </div>
+</div>
+
+<!-- ─── ICMP IDENTIFIER ───────────────────────────────────── -->
+<div class="card" id="icmp-id">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 39&ndash;40</span>
+    <span class="cn" style="color:var(--green)">Identifier</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Nur bei Echo Request/Reply (Type 8/0) &bull; Zuordnung Request &harr; Reply</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Identifiziert den Ping-Prozess, damit das OS die Antwort dem richtigen
+      Prozess zuordnen kann (aequivalent zum Port bei TCP/UDP, aber kein echter Port!).
+      Typisch: Prozess-ID (PID) des ping-Prozesses oder eine zufaellige Zahl.
+      Wireshark: <code>Identifier (BE): 1 (0x0001)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Typische Identifier-Werte nach OS/Tool</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>OS / Tool</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00 01 &ndash; ff ff</td><td>1&ndash;65535</td><td>Linux ping</td><td>Prozess-ID (PID) des ping-Prozesses &rarr; typisch 1&ndash;32768</td></tr>
+        <tr><td class="m">00 01</td><td>1</td><td>Windows ping</td><td>Windows ping.exe startet immer mit ID=1 und inkrementiert</td></tr>
+        <tr><td class="m">Zufaellig</td><td>variabel</td><td>macOS ping</td><td>Zufaellige ID pro Ping-Session</td></tr>
+        <tr><td class="m">00 00</td><td>0</td><td>Einige Tools</td><td>ID=0 ist gueltig (RFC 792 schreibt keinen Mindestwert vor)</td></tr>
+        <tr><td class="m">de ad</td><td>57005</td><td>Hping3 / Nmap</td><td>Typische Marker-IDs von Scan-Tools &rarr; Fingerprint-Indikator</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Matching:</b> Echo Reply muss dieselbe ID wie der Echo Request haben.
+        Wireshark zeigt: "This is a reply to ICMP request in frame X" und verlinkt die Pakete.
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Identifier-Werte</h4>
+      <table>
+        <tr><th>Hex</th><th>Dezimal</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">de ad</td><td>57005</td><td>Hping3-Standardwert &rarr; Scan-Tool-Fingerprint</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">ca fe</td><td>51966</td><td>Typischer Fuzzing/Tool-Marker</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Immer gleich</td><td>konstant</td><td>ID aendert sich nie &rarr; kein echtes OS-Verhalten &rarr; Spoofing oder Tool</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Reply != Request</td><td>abweichend</td><td>Reply-ID != Request-ID &rarr; Spoofing oder MITM</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (ID = PID des ping-Prozesses, z.B. PID 1234 = 0x04D2):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 f7 ff <span class="hii">04 d2</span> 00 01 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 39-40: <span style="color:var(--green)">04 d2</span> = 0x04D2 = 1234 &rarr; Wireshark: "Identifier (BE): 1234 (0x04d2)"
+&#9632; Wireshark zeigt auch Little-Endian: "Identifier (LE): 0xd204"</span>
+      </div>
+      <div class="wsl">Hping3 (ID = 0xDEAD &rarr; Tool-Fingerprint):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 xx xx <span class="hbad">de ad</span> 00 01 xx xx xx xx xx xx xx xx
+        <span class="wsc">&#9632; Bytes 39-40: <span style="color:var(--red)">de ad</span> = 0xDEAD = 57005 &rarr; Hping3-Fingerprint!
+&#9632; Wireshark: "Identifier (BE): 57005 (0xdead)" &rarr; Scan-Tool erkennbar</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.ident == 0xdead</code> findet Hping3-Pakete. <code>icmp.type == 0 and icmp.type == 8</code> &rarr; nutze stattdessen: <code>icmp.seq</code> zum Verfolgen von Ping-Sequenzen.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP SEQUENCE NUMBER ──────────────────────────────── -->
+<div class="card" id="icmp-seq">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 41&ndash;42</span>
+    <span class="cn" style="color:var(--purple)">Sequence Number</span>
+    <span class="cs">2 Byte &bull; 16 Bit &bull; Big-Endian &bull; Nur bei Echo Request/Reply &bull; Inkrementiert pro gesendeten Ping</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Nummeriert die Ping-Pakete einer Session. Startet typisch bei 1 und
+      inkrementiert pro Echo Request um 1. Erlaubt Erkennung von Paketverlusten.
+      Echo Reply muss dieselbe Sequence Number wie der Request haben.
+      Wireshark: <code>Sequence Number (BE): 1 (0x0001)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Typisches Sequenz-Verhalten</h4>
+      <table>
+        <tr><th>Seq (hex)</th><th>Seq (dez)</th><th>OS / Verhalten</th><th>Bedeutung</th></tr>
+        <tr><td class="m">00 01</td><td>1</td><td>Erster Ping</td><td>Startsequenz &rarr; typisch fuer alle OS</td></tr>
+        <tr><td class="m">00 01, 00 02, ...</td><td>1, 2, 3, ...</td><td>Linux/macOS ping</td><td>Inkrementiert pro Paket &rarr; STANDARD</td></tr>
+        <tr><td class="m">00 01, 00 02, ...</td><td>1, 2, 3, ...</td><td>Windows ping</td><td>Inkrementiert pro Paket &rarr; STANDARD</td></tr>
+        <tr><td class="m">00 00</td><td>0</td><td>Einige Tools</td><td>Seq=0 ist gueltig (RFC 792)</td></tr>
+      </table>
+      <div class="note-g" style="margin-top:.5rem;">
+        &#128161; <b>Paketverlust erkennen:</b> Wenn Seq 1, 2, 4, 5 (3 fehlt) &rarr; Paketverlust.
+        Wenn Reply-Seq != Request-Seq &rarr; Spoofing oder MITM.
+        Wireshark: Statistics &rarr; ICMP zeigt Paketverlust-Statistik.
+      </div>
+    </div>
+
+    <!-- VERDAECHTIG -->
+    <div class="vs vw">
+      <h4>&#9888;&#65039; VERDAECHTIG &mdash; Auffaellige Sequenz-Muster</h4>
+      <table>
+        <tr><th>Muster</th><th>Problem</th><th>Risiko</th></tr>
+        <tr><td class="my">Immer Seq=0</td><td>Kein Inkrement &rarr; kein echtes OS-Verhalten &rarr; Scan-Tool oder Spoofing</td><td><span class="r rw">WARN</span></td></tr>
+        <tr><td class="my">Zufaellige Seq</td><td>Keine Sequenz erkennbar &rarr; Flood oder Spoofing</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td class="my">Reply-Seq != Request-Seq</td><td>Spoofing oder MITM: Angreifer antwortet mit falscher Seq</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td class="my">Sehr hohe Seq-Sprunge</td><td>Massenhaft Pakete gesendet &rarr; Flood oder Recon</td><td><span class="r rh">HIGH</span></td></tr>
+      </table>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Normaler Ping-Austausch (Seq 1 Request &rarr; Seq 1 Reply):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 f7 ff 00 01 <span class="his2">00 01</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 41-42: <span style="color:var(--purple)">00 01</span> = Seq 1 (Request)
+&#9632; Wireshark: "Sequence Number (BE): 1 (0x0001)"
+&#9632; Passende Reply hat ebenfalls Seq=1 &rarr; Wireshark verlinkt: "Reply to request in frame X"</span>
+      </div>
+      <div class="wsl">Zweiter Ping (Seq 2):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 f6 ff 00 01 <span class="his2">00 02</span> 61 62 63 64 65 66 67 68
+        <span class="wsc">&#9632; Bytes 41-42: <span style="color:var(--purple)">00 02</span> = Seq 2 &rarr; normales Inkrement
+&#9632; Checksum aendert sich: f7 ff &rarr; f6 ff (wegen Seq-Aenderung)</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>icmp.seq == 1</code> filtert nach Seq-Nummer. <code>icmp.resp_not_found</code> findet Echo Requests ohne passende Reply &rarr; Paketverlust.</div>
+  </div>
+</div>
+
+<!-- ─── ICMP PAYLOAD ──────────────────────────────────────── -->
+<div class="card" id="icmp-payload">
+  <div class="card-h" onclick="tog(this)">
+    <span class="cp">Bytes 43+</span>
+    <span class="cn" style="color:var(--teal)">ICMP Payload (Data)</span>
+    <span class="cs">Variable Laenge &bull; Bei Echo: Fuell-Daten &bull; Bei Fehlermeldungen: Original IP-Header + 8 Byte Payload</span>
+    <span class="ca">&#9660;</span>
+  </div>
+  <div class="card-b">
+    <div class="note-b">
+      &#128270; <b>Funktion:</b> Bei Echo Request/Reply: beliebige Fuell-Daten (werden unveraendert
+      zurueckgeschickt). Bei Fehlermeldungen (Type 3, 11, 12): der originale IP-Header +
+      erste 8 Byte des originalen Payloads (RFC 792).
+      Wireshark: <code>Data (32 bytes)</code>
+    </div>
+
+    <!-- NORMAL -->
+    <div class="vs vn" style="margin-top:.9rem;">
+      <h4>&#9989; NORMAL &mdash; Typische Payload-Inhalte nach OS</h4>
+      <table>
+        <tr><th>OS / Tool</th><th>Payload-Inhalt (Hex / ASCII)</th><th>Laenge</th><th>Bedeutung</th></tr>
+        <tr><td>Linux ping</td><td class="m">61 62 63 64 65 66 67 68 ... (abcdefgh...)</td><td>56 Byte</td><td>ASCII a-z zyklisch wiederholt &rarr; Standard-Linux-Payload</td></tr>
+        <tr><td>Windows ping</td><td class="m">61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 61 62 63 64 65 66 67 68 69</td><td>32 Byte</td><td>ASCII "abcdefghijklmnopqrstuvwabcdefghi" &rarr; Windows-Fingerprint</td></tr>
+        <tr><td>macOS ping</td><td class="m">08 09 0a 0b 0c 0d 0e 0f ...</td><td>56 Byte</td><td>Inkrementelle Bytes ab 0x08</td></tr>
+        <tr><td>Cisco ping</td><td class="m">ab ab ab ab ab ab ...</td><td>100 Byte</td><td>0xAB wiederholt &rarr; Cisco-Fingerprint</td></tr>
+        <tr><td>Fehlermeldung (Type 3/11)</td><td class="m">[IP-Header 20 Byte] + [erste 8 Byte des Payloads]</td><td>28+ Byte</td><td>RFC 792: Originales Paket zur Fehleridentifikation</td></tr>
+      </table>
+    </div>
+
+    <!-- VERDAECHTIG / GEFAEHRLICH -->
+    <div class="vs vd">
+      <h4>&#128721; GEFAEHRLICH &mdash; ICMP Covert Channel / Daten-Exfiltration</h4>
+      <table>
+        <tr><th>Indikator</th><th>Beschreibung</th><th>Risiko</th></tr>
+        <tr><td>Ungewoehnlicher Payload-Inhalt</td><td>Kein typisches OS-Muster &rarr; verschluesselte oder kodierte Daten im Payload &rarr; Covert Channel</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Sehr grosser Payload</td><td>&gt; 1472 Byte (MTU-Grenze) &rarr; Fragmentierung oder Ping of Death Vorbereitung</td><td><span class="r rh">HIGH</span></td></tr>
+        <tr><td>Payload aendert sich jedes Paket</td><td>Wechselnder Inhalt bei gleichem Sender &rarr; Daten werden uebertragen (z.B. icmptunnel, ptunnel)</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Payload enthaelt lesbare Strings</td><td>Klartext-Befehle oder Daten im Payload &rarr; Backdoor oder C2-Kanal</td><td><span class="r rc">KRIT</span></td></tr>
+        <tr><td>Hohe ICMP-Frequenz mit Payload</td><td>Viele Pakete mit grossem Payload &rarr; Daten-Exfiltration ueber ICMP-Tunnel</td><td><span class="r rc">KRIT</span></td></tr>
+      </table>
+      <div class="note-r" style="margin-top:.5rem;">
+        &#9888;&#65039; <b>ICMP-Tunnel-Tools:</b> <code>icmptunnel</code>, <code>ptunnel</code>, <code>icmpsh</code> &ndash;
+        diese Tools verstecken TCP/IP-Traffic oder Shell-Befehle im ICMP-Payload.
+        Viele Firewalls erlauben ICMP durch, ohne den Payload zu pruefen!
+        Erkennbar durch: ungewoehnlichen Payload, hohe Frequenz, grosse Payloads.
+      </div>
+    </div>
+
+    <!-- WIRESHARK BEISPIELE -->
+    <div class="vs vi">
+      <h4>&#128196; WIRESHARK HEX-BEISPIEL</h4>
+      <div class="wsl">Linux ping (Payload = ASCII a-z zyklisch, 56 Byte):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 f7 ff 00 01 00 01 <span class="hpay">61 62 63 64 65 66 67 68</span>
+        <span class="wo">0030&nbsp; </span><span class="hpay">69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 78</span>
+        <span class="wo">0040&nbsp; </span><span class="hpay">79 7a 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e</span>
+        <span class="wo">0050&nbsp; </span><span class="hpay">6f 70 71 72 73 74 75 76 77 61 62 63 64 65 66 67</span>
+        <span class="wsc">&#9632; Bytes 43+: <span style="color:var(--teal)">61 62 63 ... 7a 61 62 ...</span> = "abcdefghijklmnopqrstuvwxyzabcde..."
+&#9632; Wireshark: "Data (56 bytes)" &rarr; Linux-Fingerprint erkennbar</span>
+      </div>
+      <div class="wsl">Windows ping (Payload = 32 Byte, spezifisches Muster):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 xx xx 00 01 00 01 <span class="hpay">61 62 63 64 65 66 67 68</span>
+        <span class="wo">0030&nbsp; </span><span class="hpay">69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76 77 61</span>
+        <span class="wo">0040&nbsp; </span><span class="hpay">62 63 64 65 66 67 68 69</span>
+        <span class="wsc">&#9632; 32 Byte Payload &rarr; Windows-Fingerprint: "abcdefghijklmnopqrstuvwabcdefghi"
+&#9632; Wireshark: "Data (32 bytes)"</span>
+      </div>
+      <div class="wsl">ICMP Covert Channel (Payload enthaelt Klartext-Befehl):</div>
+      <div class="wsb">
+        <span class="wo">0020&nbsp; </span>08 00 xx xx 00 01 00 01 <span class="hbad">63 6d 64 2e 65 78 65 20</span>
+        <span class="wo">0030&nbsp; </span><span class="hbad">2f 63 20 69 70 63 6f 6e 66 69 67 00 00 00 00 00</span>
+        <span class="wsc">&#9632; Payload: <span style="color:var(--red)">63 6d 64 2e 65 78 65 20 2f 63 20 69 70 63 6f 6e 66 69 67</span>
+&#9632; ASCII: "cmd.exe /c ipconfig" &rarr; Shell-Befehl im ICMP-Payload = BACKDOOR!</span>
+      </div>
+    </div>
+    <div class="note">&#128161; <b>Wireshark-Filter:</b> <code>data.len &gt; 100 and icmp</code> findet ICMP mit grossem Payload. <code>icmp contains "cmd"</code> sucht nach Klartext im Payload.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     FOOTER
+     ════════════════════════════════════════════════════════════ -->
+<div style="margin-top:3rem;padding:1.5rem 2rem;background:var(--card-bg);border-top:2px solid var(--border);border-radius:0 0 12px 12px;text-align:center;color:var(--text-dim);font-size:.85rem;">
+  <div style="margin-bottom:.5rem;font-size:1rem;color:var(--text);">
+    &#128196; Wireshark Hex-Referenz &mdash; Ethernet + IPv4 + ICMP
+  </div>
+  <div>
+    RFC 792 (ICMP) &bull; RFC 791 (IPv4) &bull; RFC 894 (Ethernet) &bull; RFC 1918 (Private IPs) &bull; RFC 3168 (ECN) &bull; RFC 2474 (DSCP)
+  </div>
+  <div style="margin-top:.4rem;">
+    Alle Angaben nach aktuellen RFCs. Hex-Werte in Big-Endian (Network Byte Order) sofern nicht anders angegeben.
+  </div>
+  <div style="margin-top:.4rem;color:var(--yellow);">
+    &#9888;&#65039; Diese Referenz dient ausschliesslich zu Lern- und Analysezwecken im eigenen Netz.
+  </div>
+</div>
+
+</div><!-- /#main -->
+</div><!-- /.container -->
+
+<script>
+// ── Toggle-Funktion fuer Klappcards ──────────────────────────
+function tog(hdr) {
+  var body = hdr.nextElementSibling;
+  var arrow = hdr.querySelector('.ca');
+  if (body.style.display === 'none' || body.style.display === '') {
+    body.style.display = 'block';
+    arrow.innerHTML = '&#9650;';
+    hdr.classList.add('open');
+  } else {
+    body.style.display = 'none';
+    arrow.innerHTML = '&#9660;';
+    hdr.classList.remove('open');
+  }
+}
+
+// ── Alle Karten beim Start oeffnen ───────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.card-b').forEach(function(b) {
+    b.style.display = 'block';
+  });
+  document.querySelectorAll('.card-h .ca').forEach(function(a) {
+    a.innerHTML = '&#9650;';
+  });
+  document.querySelectorAll('.card-h').forEach(function(h) {
+    h.classList.add('open');
+  });
+});
+
+// ── Byte-Map: Klick auf Byte springt zur Karte ───────────────
+document.querySelectorAll('.bm-byte').forEach(function(b) {
+  b.addEventListener('click', function() {
+    var target = this.getAttribute('data-target');
+    if (target) {
+      var el = document.getElementById(target);
+      if (el) {
+        el.scrollIntoView({behavior: 'smooth', block: 'start'});
+        el.querySelector('.card-h').classList.add('highlight');
+        setTimeout(function() {
+          el.querySelector('.card-h').classList.remove('highlight');
+        }, 2000);
+      }
+    }
+  });
+});
+
+// ── Alle aufklappen / alle zuklappen ─────────────────────────
+function allOpen() {
+  document.querySelectorAll('.card-b').forEach(function(b) { b.style.display = 'block'; });
+  document.querySelectorAll('.card-h .ca').forEach(function(a) { a.innerHTML = '&#9650;'; });
+  document.querySelectorAll('.card-h').forEach(function(h) { h.classList.add('open'); });
+}
+function allClose() {
+  document.querySelectorAll('.card-b').forEach(function(b) { b.style.display = 'none'; });
+  document.querySelectorAll('.card-h .ca').forEach(function(a) { a.innerHTML = '&#9660;'; });
+  document.querySelectorAll('.card-h').forEach(function(h) { h.classList.remove('open'); });
+}
+</script>
+
+</body>
+</html>
