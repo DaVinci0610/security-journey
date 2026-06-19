@@ -4,6 +4,16 @@ Having seen and understood what information Wireshark provides, it becomes easie
 
 I had already gone through the individual fields in Area 2 — now I wanted to go one step deeper and look at the bytes themselves: which information is stored where.
 
+To have a reference point for which values an ICMP packet can take – and more importantly, which of those are considered **normal**, **suspicious** or **dangerous** – I created a detailed reference table based on my own research, supported by Claude Sonnet (AI) for the HTML structure.
+
+> **Note:** The table is intentionally extensive, but far from complete.
+> ICMP is a complex protocol and new attack patterns emerge continuously.
+
+[🌐 ICMP CheatSheet öffnen](https://DaVinci0610.github.io/security-journey/icmp-analysis/ICMP-CheatSheet.html)
+
+- **Quick Reference** – Get a rough first assessment when encountering unknown or unusual values
+- **Living Document** – The table is meant to grow over time, filled with new findings and up-to-date information throughout future projects
+- **Learning Aid** – Not a substitute for deep understanding, but a useful starting point
 
 ### Why Break Down Individual Bytes?
 
