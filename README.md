@@ -6,6 +6,11 @@ In this project, I want to fill my knowledge gaps regarding data packets,
 protocols and ports. With this experiment, I begin building practical knowledge
 in order to carry out more complex projects in the future.
 
+This repository is a personal cybersecurity learning journal.
+It documents my practical learning process step by step, including research,
+experiments, notes, observations and planned improvements.
+
+
 ---
 
 ## Why ICMP?
@@ -36,3 +41,17 @@ protocols like TCP and UDP later on.
 
 I captured an ICMP packet on **Kali Linux** using **Wireshark** and fully
 dissected it – analyzing and documenting every single and possible value.
+
+## Current Status
+
+Completed:
+- Captured normal ICMP Echo Request and Echo Reply packets
+- Documented Wireshark basics
+- Analyzed Ethernet, IPv4 and ICMP fields
+- Created handwritten research notes
+
+Planned:
+- ICMP packet manipulation
+- Comparison of normal and modified packets
+- Detection of abnormal packet values
+
