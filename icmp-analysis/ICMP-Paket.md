@@ -38,17 +38,17 @@ Below I go through the complete structure of the captured ICMP packet **layer by
 
 ## Ethernet II - Byte 1-14
 
-![alt text](image-16.png)
+![Ethernet II](Ethernet-II.png)
 
 Like the vast majority of modern IP networks, ICMP uses Ethernet II as its foundation for the first 14 bytes of the packet. As the successor to Ethernet I (1980), Ethernet II introduced the EtherType field — a 2-byte field located at bytes 13–14 — which tells the receiver which protocol is carried in the payload. 
 As an alternative framing standard, IEEE 802.3 is used in certain other contexts, where those same 2 bytes indicate the frame length instead of the protocol type.
 
-![alt text](image-17.png)
+![Byte 1-14](Byte-1-14.png)
 
 
 *The first subordinate tab "Destination" of the Ethernet II section can be further subdivided as follows:*
 
-![alt text](image-19.png)
+![Byte 1-3](Byte-1-3.png)
 
 
 ---
@@ -92,13 +92,13 @@ As an alternative framing standard, IEEE 802.3 is used in certain other contexts
 
 ### Source MAC Address – Bytes 7–12
 
-![alt text](image-20.png)
+![Byte 7-12](Byte-7-12.png)
 
 The structure is **identical** to the Destination MAC Address (Bytes 1–6):
 
 ### Bytes 7–9: OUI *(Organizationally Unique Identifier)*
 
-![alt text](image-21.png)
+![Bytes 7–9](Bytes-7–9.png)
 
 - Assigned to manufacturers by the **IEEE**
 - Identifies the **manufacturer** of the **sending** device's network card
@@ -125,7 +125,7 @@ The structure is **identical** to the Destination MAC Address (Bytes 1–6):
 
 ### Bytes 13-14: EtherType
 
-![alt text](image-22.png)
+![Bytes 13-14](Bytes-13-14.png)
 
 Bytes 13–14 form the **conclusion of the Ethernet II header** and indicate which protocol is encapsulated in the payload that follows.
 
@@ -150,7 +150,7 @@ Bytes 13–14 form the **conclusion of the Ethernet II header** and indicate whi
 
 ### Wireshark Metadata – `[Stream Index: 0]`
 
-![alt text](image-23.png)
+![Wireshark Metadata](Wireshark-Metadata.png)
 
 At the end of this section the field `[Stream Index: 0]` appears, which cannot be mapped to any byte in the hex dump. Wireshark adds its own **metadata fields** for analysis purposes and marks them with **square brackets `[ ]`** to distinguish them from actual protocol fields.
 
@@ -213,7 +213,7 @@ As usual, indicates **which protocol follows** in the payload.
 
 ### Byte 15: Version & Internet Header Length
 
-![alt text](image-24.png)
+![Byte 15](Byte-15.png)
 
 The first byte of the IPv4 header is split into two 4-bit fields:
 
@@ -234,7 +234,7 @@ The first byte of the IPv4 header is split into two 4-bit fields:
 The second byte of the IPv4 header is itself split into two subfields, which is why Wireshark displays it as an expandable section:
 
 
-![alt text](image-26.png)
+![Byte 16](Byte-16.png)
 
 -**DSCP** *(Differentiated Services Code Point)* – upper 6 bits:
 
@@ -268,7 +268,7 @@ Used to signal **network congestion without discarding packets**. An overloaded 
 
 Specifies the **total length of the entire IPv4 packet** in bytes – meaning the **IPv4 header plus its payload**.
 
-![alt text](image-27.png)
+![Byte 17-18](Byte-17-18.png)
 
 
 > **What is the payload?**
@@ -282,7 +282,7 @@ Specifies the **total length of the entire IPv4 packet** in bytes – meaning th
 
 Every IPv4 packet is assigned a **unique identification number** by the sender.
 
-![alt text](image-28.png)
+![Byte 19-20](Byte-19-20.png)
 
 
 If a packet is **too large** for the network path and must be **fragmented**, all resulting fragments receive the **same identification number** as the original packet. This allows the receiver to recognise which fragments belong together and reassemble them correctly.
@@ -295,7 +295,7 @@ If a packet is **too large** for the network path and must be **fragmented**, al
 
 This field is also expandable in Wireshark, as it contains multiple subfields that control fragmentation behaviour:
 
-![alt text](image-29.png)
+![Byte 21-22](Byte-21-22.png)
 
 
 -**Flags** – upper 3 bits
@@ -323,7 +323,7 @@ This field is also expandable in Wireshark, as it contains multiple subfields th
 
 The sender **sets** the TTL to an initial value when the packet is created. 
 
-![alt text](image-30.png)
+![Byte 23](Byte-23.png)
 
 Every router along the path **decrements this value by 1**. If it reaches `0`, the packet is **discarded** and an **ICMP "Time Exceeded" error message** is sent back to the original sender. This prevents packets from circulating endlessly in the network in the event of routing loops.
 
@@ -343,7 +343,7 @@ Every router along the path **decrements this value by 1**. If it reaches `0`, t
 
 This field indicates **which protocol is encapsulated in the payload** – i.e. how the data following the IPv4 header should be interpreted by the receiver.
 
-![alt text](image-31.png)
+![Byte 24](Byte-24.png)
 
 This is the same concept as the **EtherType field** in Ethernet II: just as EtherType tells the receiver what follows after the Ethernet header, the Protocol field tells the receiver what follows after the IPv4 header.
 
@@ -362,7 +362,7 @@ This is the same concept as the **EtherType field** in Ethernet II: just as Ethe
 
 The sender calculates a **checksum over the IPv4 header only** and writes the result into this field. Upon receiving the packet, the receiver **recalculates the checksum** and compares it to the stored value. If the two values do not match, the packet is **silently discarded** – no error message is sent.
 
-![alt text](image-32.png)
+![Byte 25-26](Byte-25-26.png)
 
 
 > The checksum detects **bit errors** – i.e. individual bits that were accidentally flipped during transmission due to electrical interference or hardware faults. It does **not** detect missing bytes – that is handled by the **Total Length** field and higher-layer protocols.
@@ -388,7 +388,7 @@ Modern operating systems and network cards use **Checksum Offloading** – meani
 
 These four bytes contain the **IP address of the sender** – i.e. the device that originally created and sent this packet.
 
-![alt text](image-33.png)
+![Byte 27-30](Byte-27-30.png)
 
 The source IP address is present in **every** IPv4 packet – not just in requests. Both the request and the reply carry their respective sender's IP address.
 
@@ -399,7 +399,7 @@ The source IP address is present in **every** IPv4 packet – not just in reques
 ### Byte 31-34: Destination IP
 These four bytes contain the **IP address of the intended recipient** – i.e. the device this packet is ultimately addressed to.
 
-![alt text](image-34.png)
+![Byte 31-34](Byte-31-34.png)
 
 > **Hop-to-hop vs. end-to-end:** The destination IP address also remains **unchanged** across all hops. Every router along the path reads this field to determine where to forward the packet next – but never modifies it. Only the destination MAC address in the Ethernet II header is updated at each hop to reflect the next device on the path.
 
@@ -409,7 +409,7 @@ These four bytes contain the **IP address of the intended recipient** – i.e. t
 
 With the Ethernet II header (14 bytes) and the IPv4 header (20 bytes) fully parsed, now the payload of the IPv4 packet – the ICMP message, starts at byte 35 of the Ethernet frame.
 
-![alt text](image-35.png)
+![Internet Control Message Protocol - Byte 35-98](ICMP-Byte-35.98.png)
 
 The ICMP section in this capture spans 64 bytes and is divided into two parts:
 
@@ -425,7 +425,7 @@ This single byte identifies the **type of ICMP message** – it tells the receiv
 
 > **In this capture:** The value is `8` → this is an **Echo Request**, commonly known as a **ping**.
 
-![alt text](image-36.png)
+![Byte 35](Byte-35.png)
 
 The Type field is the primary identifier in every ICMP message. The most commonly encountered values are:
 
@@ -448,7 +448,7 @@ This byte acts as a **subtype** of the Type field – it further specifies the m
 > **In this capture:** The value is `0` – which is the only valid code for an Echo Request. It simply means: *no further specification needed*.
 
 
-![alt text](image-37.png)
+![Byte 36](Byte-36.png)
 
 The Code field only becomes meaningful for certain ICMP types. For Echo Request *(Type 8)* and Echo Reply *(Type 0)*, the Code is always `0`. The most relevant examples where Code carries real information are:
 
@@ -478,7 +478,7 @@ These two bytes contain the **checksum of the entire ICMP message** – covering
 
 > **Important distinction from the IPv4 Header Checksum:** The IPv4 checksum only covers the IPv4 header itself. The ICMP checksum, by contrast, covers **everything** – the full ICMP header plus all payload bytes. This means any corruption anywhere in the ICMP message will be detected.
 
-![alt text](image-38.png)
+![Byte 37-38](Byte-37-38.png)
 
 **Why** does Wireshark validate the ICMP checksum by default – but not the IPv4 checksum?
 
@@ -494,7 +494,7 @@ The reason lies in **where** each checksum is calculated:
 
 These two bytes contain a process identifier (PID) – a number assigned by the operating system to uniquely identify which ping process sent this request. When the Echo Reply arrives, the sender uses this value to match the reply to the correct process, especially when multiple ping processes are running simultaneously.
 
-![alt text](image-39.png)
+![Byte-39-40](Byte-39-40.png)
 
 Wireshark displays this field **twice** – not because it occupies 4 bytes, but because the same 2 bytes can be read in two different byte orders:
 
@@ -515,7 +515,7 @@ Wireshark displays this field **twice** – not because it occupies 4 bytes, but
 
 These two bytes contain the sequence number of this ping packet. The sequence number starts at 1 for the first Echo Request sent by a process and is incremented by 1 with every subsequent ping – regardless of whether a reply was received.
 
-![alt text](image-40.png)
+![Byte 41-42](Byte-41-42.png)
 
 Like the Identifier, the Sequence Number is also displayed in both byte orders by Wireshark, for the same reason:
 
@@ -540,6 +540,8 @@ Like the Identifier, the Sequence Number is also displayed in both byte orders b
 ### Byte 43-50: Timestamp
 
 Here starts the **Payload**:
+
+![Byte 43-50](Byte-34-50.png)
 
 The primary purpose of the timestamp is to measure the **Round-Trip Time (RTT)** – the total time a packet takes to travel from the sender to the destination and back again.
 
@@ -568,6 +570,8 @@ Echo Reply arrives        →  current time − timestamp = RTT
 ### Byte 51-98:
 
 The remaining **48 bytes** of the ICMP payload contain nothing but **padding** – a simple, repeating sequence of bytes with no functional meaning. Their sole purpose is to bring the packet to its intended size.
+
+![Byte 51-98](Byte-51-98.png)
 
 **The pattern in this capture**
 
