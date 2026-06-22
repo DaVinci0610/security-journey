@@ -47,19 +47,19 @@ To launch Wireshark, I opened my terminal (Ctrl+Alt+T) and entered:
 `sudo wireshark` — where "sudo" stands for "superuser do" and acts as the master key to execute any command on this machine (the host password will be prompted).
 
 
-![alt text](image-1.png)
+![Opening Wireshark with Terminal](Wireshark-Terminal.png)
 
 
 After entering my password, the Wireshark start page opened. As expected, a large number of tabs, information, and configurations were immediately visible at first glance.
 
 
-![alt text](image-2.png)
+![Outlined Wireshark Filter](Outlined-Wireshark-Filter.png)
 
 
 In order not to get lost in this forest of information, I highlighted the filter tab — which, even before launching the program, seemed to me the obvious first thing to look for, since I only wanted to work with one specific type of information: ICMP.
 
 
-![alt text](image-4.png)
+![ICMP filter input](ICMP-filter-input.png)
 
 
 The input field turned green after I entered the protocol — a clear sign that the input was valid. This saves an enormous amount of stress and sorting effort.
@@ -75,12 +75,12 @@ Once the capture started, I was immediately met with an empty window. This is wh
 For this reason, I divided this screen into 3 areas, which I wanted to understand before sending anything.
 
 
-![alt text](image-5.png)
+![all empty areas](all-empty-areas.png)
 
 
 Area 1 is divided into 7 columns, which I broke down one by one:
 
-![alt text](image-6.png)
+![empty area 1](empty-area-1.png)
 
 
 
@@ -105,7 +105,7 @@ Area 1 is divided into 7 columns, which I broke down one by one:
 Area 2 and 3 are more closely connected when it comes to gathering information. While Area 3 displays the packet as hexadecimal code, Area 2 helped me understand how that code is structured and what information can be read from it.
 
 
-![alt text](image-7.png)
+![empty area 2 and 3](empty-area-2-3.png)
 
 
 In Area 2 I found four tabs:
@@ -147,7 +147,7 @@ ping -c 1 8.8.8.8
 
 
 
-![alt text](image-10.png)
+![ping command in terminal](ping-command.png)
 
 
 I entered the command in the terminal and within seconds, **2 packets** appeared in Wireshark.
@@ -186,14 +186,14 @@ rtt min/avg/max/mdev = 40.668/40.668/40.668/0.000 ms
 ------------------------------------------------------------------------------------------------------------------------------
 
 
-![alt text](image-8.png)
+![receiving ping in wireshark](ping-in-wireshark.png)
 
 
 I could now see my 3 familiar areas — this time filled with data.
 
 In **Area 1**, after all the preparation, only the **Info column** still raised some questions, which I wanted to address directly.
 
-![alt text](image-12.png)
+![Info in Area 1 explaining](info-area-1.png)
 
 ---
 
@@ -221,7 +221,7 @@ At the very beginning, the **ICMP type** is declared:
 After breaking down Area 1, the next interesting source of information was hidden in the **interaction between Area 2 and Area 3**.
 
 
-![alt text](image-14.png)
+![ping in area 2-3](ping-area-2-3.png)
 
 
 ---
@@ -249,7 +249,7 @@ In the screenshot, I am hovering over **Frame 17** — and as I already knew fro
 
 ------------------------------------------------------------------------------------------------------------------------------
 
-![alt text](image-15.png)
+![Hex-Code & ASCII](Hex-and-ASCII.png)
 
 
 One thing I still needed to address was the ASCII representation displayed alongside the hex code in Area 3.
