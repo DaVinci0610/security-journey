@@ -1,0 +1,13 @@
+# 03 Homelab Setup
+
+---------------------------
+
+To turn the prework into a valid project, I am planning to manipulate an ICMP packet
+and send it from a laptop running Kali Linux to a laptop running Windows 11.
+Wireshark will be running on the Windows 11 machine to capture the incoming traffic
+directly on the target system, which reflects the concept of host-based monitoring.
+I am going into this experiment with the following questions:
+
+- How does the attacker use ICMP for his actions and what does he accomplish by doing so?
+- What Indicators of Compromise can the defender use to detect the attack?
+- What defenses does the attacker have to overcome and on which OSI layer do they operate?
