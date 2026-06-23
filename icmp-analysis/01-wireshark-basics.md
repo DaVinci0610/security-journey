@@ -249,7 +249,7 @@ In the screenshot, I am hovering over **Frame 17** — and as I already knew fro
 
 ------------------------------------------------------------------------------------------------------------------------------
 
-![Hex-Code & ASCII](image-15.png)
+![Hex-Code & ASCII](Hex-and-ASCII.png)
 
 
 One thing I still needed to address was the ASCII representation displayed alongside the hex code in Area 3.

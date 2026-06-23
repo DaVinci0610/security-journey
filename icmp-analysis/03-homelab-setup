@@ -2,12 +2,59 @@
 
 ---------------------------
 
-To turn the prework into a valid project, I am planning to manipulate an ICMP packet
-and send it from a laptop running Kali Linux to a laptop running Windows 11.
-Wireshark will be running on the Windows 11 machine to capture the incoming traffic
-directly on the target system, which reflects the concept of host-based monitoring.
-I am going into this experiment with the following questions:
+The goal of this experiment is to manipulate an ICMP packet and send it from a
+machine running Kali Linux to a machine running Windows 11 — both connected to
+the same home Wi-Fi network. This setup forms the foundation for everything that
+follows.
 
-- How does the attacker use ICMP for his actions and what does he accomplish by doing so?
-- What Indicators of Compromise can the defender use to detect the attack?
-- What defenses does the attacker have to overcome and on which OSI layer do they operate?
+To structure my thinking, I am going into this experiment with a set of questions
+that I want to answer through hands-on work:
+
+- How does an attacker use ICMP for his actions, and what does he accomplish by doing so?
+- What Indicators of Compromise can a defender use to detect the attack?
+- What defenses does the attacker have to overcome, and on which OSI layer do they operate?
+- What kind of information can realistically be stolen via ICMP manipulation?
+- What are the limitations of the attacker in this scenario?
+
+These questions will guide the structure of the chapters that follow.
+
+---
+
+## Network Topology
+
+To make myself aware of the path a packet has to take — and to prepare for
+potential obstacles along the way — I created a simple network topology of my lab environment.
+
+![WiFi-Network Topologie](WiFi-Network.png)
+
+*The topology shows two machines on the same Wi-Fi subnet: the attacker (Kali Linux)
+and the victim (Windows 11). All traffic between them passes through the home router.*
+
+| Role     | OS                | Network |
+|----------|-------------------|---------|
+| Attacker | Kali Linux 2026.2 | Wi-Fi   |
+| Victim   | Windows 11 Home   | Wi-Fi   |
+
+---
+
+## Tooling
+
+**Scapy 2.7.01** runs on the attacker machine. It is a Python-based packet
+manipulation library and serves as the primary tool for crafting and sending
+custom ICMP packets throughout this experiment.
+
+**Wireshark** is deployed on the victim machine. Capturing traffic directly
+on the target system reflects the concept of host-based monitoring — it provides
+the defender's perspective on the attack as it is received by the OS.
+
+---
+
+## Assumed Breach
+
+This experiment does not cover initial network access. The steps required to
+gain a foothold in a network involve protocols and techniques that are beyond
+my knowledge. The attacker is therefore assumed to have already
+gained access to the local Wi-Fi network.
+
+Everything that happens after that point — including host discovery and target
+identification — is something I will work through and document hands-on.
