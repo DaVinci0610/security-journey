@@ -16,7 +16,7 @@ that I want to answer through hands-on work:
 - What kind of information can realistically be stolen via ICMP manipulation?
 - What are the limitations of the attacker in this scenario?
 
-These questions will guide the structure of the chapters that follow.
+These questions will guide the chapters that follow.
 
 ---
 
@@ -49,7 +49,7 @@ the defender's perspective on the attack as it is received by the OS.
 
 ---
 
-## Assumed Breach
+## Notes
 
 This experiment does not cover initial network access. The steps required to
 gain a foothold in a network involve protocols and techniques that are beyond
