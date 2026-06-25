@@ -541,7 +541,7 @@ Like the Identifier, the Sequence Number is also displayed in both byte orders b
 
 Here starts the **Payload**:
 
-![Byte 43-50](Byte-34-50.png)
+![Byte 43-50](Byte-43-50.png)
 
 The primary purpose of the timestamp is to measure the **Round-Trip Time (RTT)** – the total time a packet takes to travel from the sender to the destination and back again.
 

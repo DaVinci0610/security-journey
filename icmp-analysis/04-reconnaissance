@@ -1,0 +1,43 @@
+# 04 Reconnaissance
+
+---
+## Preparation
+
+Now I ask myself — the attacker has gained access to the Wi-Fi network and is now operating inside a foreign network as an intruder. I won't cover the initial access vector here — that will be addressed in a separate chapter. The starting point for the following analysis is T₀: an unauthorized device (Kali Linux laptop) is active on the network.
+
+This is an ideal opportunity to fill a gap in my knowledge — what exactly happens between a device and the DHCP server when connecting to a network? (In this setup, the home router fulfills both roles). 
+I will not be able to fully cover this question within this chapter, but it serves as a perfect entry point, since my current experiment does not require the complete picture. As planned, I will go deeper into the subject with each experiment.
+
+This is where the defender — the victim — comes into play. I will now carry out and document the steps the attacker needs to take, and afterwards break down how the victim could detect this early on.
+
+---
+
+Before scanning the network or taking any further action, I want to make the attacker's current position clear. The moment a device joins a network — regardless of how access was obtained — traces are left behind. These traces form the starting point for the blue team's work. To understand them, and to build on that understanding going forward, I will cover the information that is relevant to my current situation here. Each protocol involved will be examined in greater depth from experiment to experiment.
+
+As I already noticed when breaking down the ICMP packet, information is exchanged that reveals my identity. As a potential attacker, my first question here is: what information is required from me when connecting to a Wi-Fi network? The next thought is where that information is left behind — temporarily or permanently? 
+
+Before any of those questions can be answered, I need to know where I stand. What does this device look like to the network right now?
+
+The `ip` command is the main tool in Linux for everything network-related.
+
+Output of `ip a` — where `a` stands for address:
+
+| Field   | Meaning                        |
+|---------|--------------------------------|
+| `wlan0` | Name of the interface          |
+| `ether` | MAC address, Layer 2           |
+| `inet`  | IPv4 address, Layer 3          |
+| `inet6` | IPv6 address                   |
+| `/24`   | Subnet mask (254 possible hosts)|
+
+
+To filter out the information relevant to the attacker, the command is refined as follows:
+
+![Terminal ip a show wlan0](Terminal-ip-show-command.png)
+
+- `ip a show wlan0` — limits the output to the `wlan0` interface only
+- `|` — pipe, passes the output to the next command
+- `grep -E` — searches for multiple patterns using `|` as "or"
+- `"ether|inet "` — matches lines containing `ether` (MAC) or `inet ` with a trailing space, which excludes `inet6`
+
+![IP Command Result](IP-Command-Result.png)
